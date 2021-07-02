@@ -1,0 +1,20 @@
+---
+# file: roles/common/tasks/allow_sudo.yml
+
+- name: Install sudo
+  package: name=sudo state=present
+
+- name: Allow sudo to saxt0123
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    backup: yes
+    regexp: '^%saipemnet\\\\saxt0123'
+    line: '%saipemnet\\saxt0123                               ALL = (root) NOPASSWD:/usr/sbin/dmidecode,/usr/sbin/hwinfo'
+- name: Allow sudo to SRV.Admins.ForeignSites.SanDonatoM.se
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    backup: yes
+    regexp: '^%saipemnet\\\\SRV.Admins.ForeignSites.SanDonatoM.se'
+    line: '%saipemnet\\SRV.Admins.ForeignSites.SanDonatoM.se  ALL=(ALL) NOPASSWD:ALL'

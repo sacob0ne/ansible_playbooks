@@ -1,0 +1,7 @@
+20151118_12:17:15	ReStart Launched on 'redis-server'
+20151118_12:17:15	is redis-server Running ? .... checking ...
+20151118_12:17:15	PSstr: /sw/redis-2.4.15/bin/redis-server /sw/redis-2.4.15/redis.conf
+20151118_12:17:15	PS CMD: 'ps -ef | egrep /sw/redis-2.4.15/bin/redis-server /sw/redis-2.4.15/redis.conf | egrep -v grep'
+httpadm   6478     1  0 Nov17 ?        00:01:03 /sw/redis-2.4.15/bin/redis-server /sw/redis-2.4.15/redis.conf
+20151118_12:17:15	'redis-server' Seems Already Running
+httpadm   6478     1  0 Nov17 ?        00:01:03 /sw/redis-2.4.15/bin/redis-server /sw/redis-2.4.15/redis.conf

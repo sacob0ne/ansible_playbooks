@@ -1,0 +1,56 @@
+---
+-   name: Allow root access on AWS machines
+    hosts: prometheus
+    user: centos
+    become: yes
+    become_user: root
+    become_method: sudo
+    gather_facts: false
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    roles:
+    - { role: dap-allow-root-access, when: aws | default("false") | match("true") }
+    tags: preflight
+
+-   name: Preflight Prometheus
+    hosts: prometheus
+    user: root
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    roles:
+    - { role: dap-prometheus-preflight }
+    tags: preflight
+    
+-   name: Gather Facts from the whole monitored cluster
+    hosts: seed:masters:private-agents:public-agents:storage:es-masters:es-data:es-client:es-logstash:prometheus
+    user: root
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    gather_facts: true
+    serial: 10
+    roles:
+    - { role: dap-gather-facts }
+    tags: 
+        - start
+        - update
+
+-   name: Check Configuration
+    hosts: prometheus[0]
+    user: root
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    roles:
+    - { role: dap-check-prometheus }
+    tags: 
+        - check
+        
+-   name: Start Prometheus
+    hosts: prometheus
+    user: root
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    roles:
+    - { role: dap-start-prometheus }
+    tags: 
+        - start
+        - update

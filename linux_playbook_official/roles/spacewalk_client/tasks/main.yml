@@ -1,0 +1,13 @@
+---
+# file: roles/common/tasks/register_spacewalk.yml
+
+- name: Add the OS family specific variables
+  include_vars: '{{ ansible_os_family }}{{ ansible_distribution_major_version }}.yml'
+  ignore_errors: true
+
+- include: register_spacewalk_suse.yml
+  when: (ansible_distribution == "SLES")
+
+- include: register_spacewalk_rhel.yml
+  when: ansible_distribution == 'CentOS' or
+        ansible_distribution == 'RedHat'

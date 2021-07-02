@@ -1,0 +1,8 @@
+#variables
+
+pem: /var/jenkins_home/env_keys/<pem_key>
+jumphost: centos@<SERVER_IP>
+cassandra_docker: <CONTAINER_REGISTRY_NAME>:5003/skydap/cassandra:3.0.10
+folder: exportcsv
+file: backup-{{ ansible_date_time.date }}.tar.gz
+ignored_tables: '[<ignore_tables>]'

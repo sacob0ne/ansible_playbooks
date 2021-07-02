@@ -1,0 +1,99 @@
+---
+- name: Create Directory
+  file:
+    path: "/tmp/prometheus"
+    state: directory
+    recurse: yes
+    mode: 0755
+    owner: centos
+    group: centos
+
+- name: Create Directory
+  file:
+    path: "/tmp/alertmanager"
+    state: directory
+    recurse: yes
+    mode: 0755
+    owner: centos
+    group: centos
+    
+#Configure prometheus
+- name: Download & Unarchive prometheus
+  unarchive:
+    src: https://s3.eu-central-1.amazonaws.com/dap-file-repository/prometheus-{{ promtool_version }}.linux-amd64.tar.gz
+    dest: /tmp/prometheus
+    remote_src: yes
+
+- name: Download & Unarchive alertmanager
+  unarchive:
+    src: https://s3.eu-central-1.amazonaws.com/dap-file-repository/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz
+    dest: /tmp/alertmanager
+    remote_src: yes
+
+- name: Get list of rules
+  command: bash -c "ls ../dockers/prometheus-stack-j2/prometheus/config/*rules.j2 | awk -F/ '{print $NF}' | sed 's#.j2##' "
+  delegate_to: localhost
+  register: rules
+
+- name: Get list of yml rules
+  command: bash -c " ls ../dockers/prometheus-stack-j2/prometheus/config/*rules.yml.j2 | awk -F/ '{print $NF}' | sed 's#.j2##' "
+  delegate_to: localhost
+  register: yml_rules
+
+- name: Copy Prometheus rules to temp Promtool dir
+  template:
+    src: ../../../dockers/prometheus-stack-j2/prometheus/config/{{ item }}.j2
+    dest: /tmp/prometheus/prometheus-{{ promtool_version }}.linux-amd64/{{ item }}
+  with_items: 
+    - "{{ rules.stdout_lines }}"
+    - "{{ yml_rules.stdout_lines }}"
+
+- name: Convert .rules to .yml
+  command: bash -c "./promtool update rules \"{{ item }}\""
+  args:
+    chdir: /tmp/prometheus/prometheus-{{ promtool_version }}.linux-amd64/
+  with_items: "{{ rules.stdout_lines }}"
+
+- name: Copy AlertManager Configuration
+  template:
+    src: ../dockers/prometheus-stack-j2/alertmanager/config/config.yml.j2
+    dest: /tmp/alertmanager/alertmanager-{{ alertmanager_version }}.linux-amd64/config.yml
+
+- name: Copy Prometheus Configuration
+  template:
+    src: ../dockers/prometheus-stack-j2/prometheus/config/prometheus.yml.j2
+    dest: /tmp/prometheus/prometheus-{{ promtool_version }}.linux-amd64/prometheus.yml
+
+- name: Check Prometheus rules
+  command: bash -c "./promtool check rules \"{{ item }}\".yml"
+  args:
+    chdir: /tmp/prometheus/prometheus-{{ promtool_version }}.linux-amd64/
+  with_items: "{{ rules.stdout_lines }}"
+  
+- name: Check Prometheus rules
+  command: bash -c "./promtool check rules \"{{ item }}\""
+  args:
+    chdir: /tmp/prometheus/prometheus-{{ promtool_version }}.linux-amd64/
+  with_items: "{{ yml_rules.stdout_lines }}"
+
+- name: Check Prometheus config
+  command: bash -c "./promtool check config \"{{ item }}\""
+  args:
+    chdir: /tmp/prometheus/prometheus-{{ promtool_version }}.linux-amd64/
+  with_items: "prometheus.yml"
+
+- name: Check AlertManager config
+  command: bash -c "./amtool check-config --alertmanager.url localhost:9093 \"{{ item }}\""
+  args:
+    chdir: /tmp/alertmanager/alertmanager-{{ alertmanager_version }}.linux-amd64/
+  with_items: "config.yml"
+
+- name: Cleanup Temp files
+  file:
+    path: "/tmp/alertmanager"
+    state: absent
+
+- name: Cleanup Temp files
+  file:
+    path: "/tmp/prometheus"
+    state: absent

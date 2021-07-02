@@ -1,0 +1,59 @@
+---
+# file: roles/common/tasks/register_spacewalk_suse.yml
+
+#- name: Remove all repos that are not spacewalk
+#  shell: find /etc/zypp/repos.d/* -maxdepth 0 -not -name '*spacewalk*' -exec sh -c "mv \"{}\" /tmp/" \;
+#  args:
+#    removes: /etc/zypp/repos.d/!(*spacewalk*) 
+
+- name: Remove novell repos
+  command: zypper sd nu_novell_com
+  args:
+    removes: /etc/zypp/repos.d/nu_novell_com*
+
+- name: Remove all SUSE repos, cd/dvd included
+  shell: rm /etc/zypp/repos.d/SUSE*
+  args:
+   removes: /etc/zypp/repos.d/SUSE*
+
+- name: Register to local repository for spacewalk client SLES
+  copy: src=spacewalk_sles{{ ansible_distribution_major_version }}.repo dest=/etc/zypp/repos.d/ owner=root group=root mode=0644
+
+- name: Add Spacewalk root CA SLES12
+  copy: src=RHN-ORG-TRUSTED-SSL-CERT dest=/etc/pki/trust/anchors/ owner=root group=root mode=0644
+  when: (ansible_distribution == "SLES" and ansible_distribution_major_version == "12")
+
+- name: Add Spacewalk root CA SLES11
+  copy: src=RHN-ORG-TRUSTED-SSL-CERT dest=/etc/ssl/certs/RHN-ORG-TRUSTED-SSL-CERT.pem owner=root group=root mode=0644
+  when: (ansible_distribution == "SLES" and ansible_distribution_major_version == "11")
+
+- name: Updating CA certificates SLES12
+  command: update-ca-certificates 
+  when: (ansible_distribution == "SLES" and ansible_distribution_major_version == "12")
+
+- name: Updating CA certificates SLES11
+  command: c_rehash /etc/ssl/certs/
+  when: (ansible_distribution == "SLES" and ansible_distribution_major_version == "11")
+
+- name: Clean zypper cache and upgrade
+  shell: zypper cc -a && zypper ref -f
+
+- name: Install spacewalk client
+  zypper: name="{{item}}" state=present
+  with_items:
+    - rhn-client-tools
+    - zypp-plugin-spacewalk
+    - rhnsd
+    - rhn-setup
+    - rhn-check
+
+- name: Delete temporary repository SUSE
+  shell: rm /etc/zypp/repos.d/spacewalk_sles{{ ansible_distribution_major_version }}.repo
+  args:
+   removes: /etc/zypp/repos.d/spacewalk_sles{{ ansible_distribution_major_version }}.repo
+
+- name: Register to spacewalk
+  command: rhnreg_ks --serverUrl=http://sasv02fj.saipemnet.saipem.intranet/XMLRPC --activationkey=1-saipem creates=/etc/sysconfig/rhn/systemid
+
+- name: Refresh repos
+  command: zypper ref -f

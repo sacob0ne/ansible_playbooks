@@ -1,0 +1,11 @@
+---
+# file: roles/common/tasks/main.yml
+
+- include: selinux.yml
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+- include: allow_sudo.yml
+
+#- include: deltarpm.yml
+#when: ( ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat' ) and
+#ansible_distribution_major_version == "7"

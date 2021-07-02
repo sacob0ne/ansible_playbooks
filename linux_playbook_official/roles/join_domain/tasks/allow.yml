@@ -1,0 +1,17 @@
+---
+# file: roles/join_domain/tasks/allow.yml
+
+- name: Enabling trusted domain group
+  ini_file: 
+    dest: /etc/security/pam_winbind.conf
+    section: global
+    option: "{{'\t'}}require_membership_of"
+    value: "SRV.Admins.ForeignSites.SanDonatoM.se,saxt0133"
+    backup: yes
+
+- name: Enabling cache login
+  ini_file: 
+    dest: /etc/security/pam_winbind.conf
+    section: global
+    option: "{{'\t'}}cached_login"
+    value: "yes"

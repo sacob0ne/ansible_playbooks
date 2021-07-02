@@ -1,0 +1,5 @@
+#variables
+
+private_registry: <SERVER_IP>
+total_standalone_elastic_memory: 0.5
+total_standalone_logstash_memory: 0.5

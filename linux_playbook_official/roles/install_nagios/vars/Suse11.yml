@@ -1,0 +1,11 @@
+---
+#nagios_service_name: xinetd
+nagios_service_name: nrpe
+nagios_disable_xinetd: /etc/xinetd.d/nrpe
+nagios_config: /etc/nrpe.cfg
+nagios_packages:
+  - nrpe
+  - monitoring-plugins-common
+  - monitoring-plugins-extras
+cifs_packages:
+  - cifs-utils

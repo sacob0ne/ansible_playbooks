@@ -1,0 +1,182 @@
+---
+# file: roles/common/tasks/main.yml
+- name: Rescan disks
+  shell: echo "- - -" > /sys/class/scsi_host/host0/scan; echo "- - -" > /sys/class/scsi_host/host1/scan; echo "- - -" > /sys/class/scsi_host/host2/scan
+
+- name: Check if VG00 is already present
+  stat:
+    path: /dev/VG00/
+  register: vg00_exist
+
+- name: Check if VG01 is already present
+  stat:
+    path: /dev/VG01/
+  register: vg01_exist
+
+- name: Format disk
+  shell: echo -e "\nn\np\n1\n\n\nt\n8e\nw" | fdisk "{{ disk_1 }}"
+  when: disk_1 is defined
+
+- name: Create volume group
+  lvg:
+    vg: VG00
+    pvs: "{{ disk_1 }}1"
+    state: present
+  when: disk_1 is defined and vg00_exist.stat.exists == False
+
+- name: Create volume group
+  lvg:
+    vg: VG01
+    pvs: "{{ disk_1 }}1"
+    state: present
+  when: disk_1 is defined and vg00_exist.stat.exists == True and vg01_exist.stat.exists == False
+
+- name: Create volume group
+  lvg:
+    vg: VG02
+    pvs: "{{ disk_1 }}1"
+    state: present
+  when: disk_1 is defined and vg01_exist.stat.exists == True
+
+- name: Create logical volume
+  lvol:
+    vg: VG00
+    lv: "{{ lvm_1 }}"
+    size: 100%FREE
+    state: present
+    shrink: no
+  when: disk_1 is defined and vg00_exist.stat.exists == False
+
+- name: Create logical volume
+  lvol:
+    vg: VG01
+    lv: "{{ lvm_1 }}"
+    size: 100%FREE
+    state: present
+    shrink: no
+  when: disk_1 is defined and vg00_exist.stat.exists == True and vg01_exist.stat.exists == False
+
+- name: Create logical volume
+  lvol:
+    vg: VG02
+    lv: "{{ lvm_1 }}"
+    size: 100%FREE
+    state: present
+    shrink: no
+  when: disk_1 is defined and vg01_exist.stat.exists == True
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+    dev: /dev/VG00/{{ lvm_1 }}
+  when: disk_1 is defined and vg00_exist.stat.exists == False
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+    dev: /dev/VG01/{{ lvm_1 }}
+  when: disk_1 is defined and vg00_exist.stat.exists == True and vg01_exist.stat.exists == False
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+    dev: /dev/VG02/{{ lvm_1 }}
+  when: disk_1 is defined and vg01_exist.stat.exists == True
+
+- name: Mount logical volume
+  mount:
+    name: "/{{ lvm_1 }}"
+    src: /dev/VG00/{{ lvm_1 }}
+    fstype: ext4
+    state: mounted
+  when: disk_1 is defined and vg00_exist.stat.exists == False
+
+- name: Mount logical volume
+  mount:
+    name: "/{{ lvm_1 }}"
+    src: /dev/VG01/{{ lvm_1 }}
+    fstype: ext4
+    state: mounted
+  when: disk_1 is defined and vg00_exist.stat.exists == True and vg01_exist.stat.exists == False
+
+- name: Mount logical volume
+  mount:
+    name: "/{{ lvm_1 }}"
+    src: /dev/VG02/{{ lvm_1 }}
+    fstype: ext4
+    state: mounted
+  when: disk_1 is defined and vg01_exist.stat.exists == True
+
+- name: Check if VG00 is already present
+  stat:
+    path: /dev/VG00
+  register: vg00_ok
+
+- name: Check if VG01 is already present
+  stat:
+    path: /dev/VG01
+  register: vg01_ok
+
+- name: Format disk
+  shell: echo -e "\nn\np\n1\n\n\nt\n8e\nw" | fdisk "{{ disk_2 }}"
+  when: disk_2 is defined
+
+- name: Create volume group
+  lvg:
+    vg: VG01
+    pvs: "{{ disk_2 }}1"
+    state: present
+  when: disk_2 is defined and vg00_ok.stat.exists == True
+
+- name: Create volume group
+  lvg:
+    vg: VG02
+    pvs: "{{ disk_2 }}1"
+    state: present
+  when: disk_2 is defined and vg01_ok.stat.exists == True
+
+- name: Create logical volume
+  lvol:
+    vg: VG01
+    lv: "{{ lvm_2 }}"
+    size: 100%FREE
+    state: present
+    shrink: no
+  when: disk_2 is defined and vg00_ok.stat.exists == True
+
+- name: Create logical volume
+  lvol:
+    vg: VG02
+    lv: "{{ lvm_2 }}"
+    size: 100%FREE
+    state: present
+    shrink: no
+  when: disk_2 is defined and vg01_ok.stat.exists == True
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+    dev: /dev/VG01/{{ lvm_2 }}
+  when: disk_2 is defined and vg00_ok.stat.exists == True
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+    dev: /dev/VG02/{{ lvm_2 }}
+  when: disk_2 is defined and vg01_ok.stat.exists == True
+
+- name: Mount logical volume
+  mount:
+    name: "/{{ lvm_2 }}"
+    src: /dev/VG01/{{ lvm_2 }}
+    fstype: ext4
+    state: mounted
+  when: disk_2 is defined and vg00_ok.stat.exists == True
+
+- name: Mount logical volume
+  mount:
+    name: "/{{ lvm_2 }}"
+    src: /dev/VG02/{{ lvm_2 }}
+    fstype: ext4
+    state: mounted
+  when: disk_2 is defined and vg01_ok.stat.exists == True

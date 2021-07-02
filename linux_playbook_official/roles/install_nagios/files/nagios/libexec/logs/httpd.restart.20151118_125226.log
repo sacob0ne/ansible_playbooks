@@ -1,0 +1,23 @@
+20151118_12:52:26	ReStart Launched on 'httpd'
+20151118_12:52:26	is httpd Running ? .... checking ...
+20151118_12:52:26	PSstr: httpd -k start
+20151118_12:52:26	PS CMD: 'ps -ef | egrep httpd -k start | egrep -v grep'
+root     60384     1  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60388 60384  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60389 60384  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60390 60384  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60391 60384  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60392 60384  8 12:23 ?        00:02:31 /sw/apache2.2/bin/httpd -k start
+daemon   60393 60384 10 12:23 ?        00:02:57 /sw/apache2.2/bin/httpd -k start
+daemon   60630 60384  5 12:23 ?        00:01:27 /sw/apache2.2/bin/httpd -k start
+daemon   63034 60384 26 12:51 ?        00:00:15 /sw/apache2.2/bin/httpd -k start
+20151118_12:52:26	'httpd' Seems Already Running
+root     60384     1  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60388 60384  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60389 60384  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60390 60384  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60391 60384  0 12:23 ?        00:00:00 /sw/apache2.2/bin/httpd -k start
+daemon   60392 60384  8 12:23 ?        00:02:31 /sw/apache2.2/bin/httpd -k start
+daemon   60393 60384 10 12:23 ?        00:02:57 /sw/apache2.2/bin/httpd -k start
+daemon   60630 60384  5 12:23 ?        00:01:27 /sw/apache2.2/bin/httpd -k start
+daemon   63034 60384 26 12:51 ?        00:00:15 /sw/apache2.2/bin/httpd -k start

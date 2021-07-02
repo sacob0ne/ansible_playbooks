@@ -1,0 +1,37 @@
+- name: copy Nagios Installer
+  win_copy: src=NRPE_Install_Win dest=C:\\
+
+- name: install Nagios for Windows 2008 R2
+#  win_msi: path=C:\\NRPE_Install_Win\NSClient++-0.3.9-x64.msi wait=true
+  win_msi:
+    path: 'C:\NRPE_Install_Win\NSClient++-0.3.9-x64.msi'
+    state: present
+    extra_args: "/quiet"
+    wait: true
+  when: (ansible_distribution == 'Microsoft Windows Server 2008 R2 Standard ' and ansible_distribution_version == '6.1.7601.65536')
+
+- name: install Nagios for Windows 2012 R2
+  win_msi: path=C:\\NRPE_Install_Win\NSClient++-0.3.9-x64.msi wait=true state=present
+  when: (ansible_distribution == 'Microsoft Windows Server 2012 R2 Standard' and ansible_distribution_version == '6.3.9600.0')
+
+- name: copy scripts directory
+  win_copy:
+    src: NRPE_Install_Win/scripts 
+    dest: C:/Program Files/NSClient++/
+
+- name: copy NSC.ini
+  win_copy:
+    src: NRPE_Install_Win/NSC.ini
+    dest: C:/Program Files/NSClient++/
+
+- name: Start service Nagios
+  win_service:
+    name: NSClientpp
+    start_mode: auto
+    state: started
+
+- name: Register to Nagios Server
+  raw: net use \\sasv0158\Nagios_Centr1_Import$ /u:saipemnet\saxt0781 <PASSWORD> ; hostname > \\sasv0158\Nagios_Centr1_Import$\add2centr.txt ; net use \\sasv0158\Nagios_Centr1_Import$ /d
+
+- name: Delete Nagios's directory
+  raw: Remove-Item -Recurse C:\NRPE_Install_Win

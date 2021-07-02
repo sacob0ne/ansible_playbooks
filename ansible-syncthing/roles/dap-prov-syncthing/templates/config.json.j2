@@ -1,0 +1,178 @@
+{
+  "version": 26,
+  "folders": [
+    {
+      "id": ".acls",
+      "label": ".acls",
+      "filesystemType": "basic",
+      "path": "/srv/data/.acls",
+      "type": "readwrite",
+      "devices": [
+{% for host in groups['private-agents'] %}
+        {
+          "deviceID": "{{ hostvars[host]['syncthing_myID'] }}",
+          "introducedBy": ""
+        },
+{% endfor %}
+      ],
+      "rescanIntervalS": 1,
+      "fsWatcherEnabled": false,
+      "fsWatcherDelayS": 10,
+      "ignorePerms": false,
+      "autoNormalize": true,
+      "minDiskFree": {
+        "value": 1,
+        "unit": "%"
+      },
+      "versioning": {
+        "type": "",
+        "params": {}
+      },
+      "copiers": 0,
+      "pullers": 0,
+      "hashers": 0,
+      "order": "random",
+      "ignoreDelete": false,
+      "scanProgressIntervalS": 0,
+      "pullerPauseS": 0,
+      "maxConflicts": 10,
+      "disableSparseFiles": false,
+      "disableTempIndexes": false,
+      "paused": false,
+      "weakHashThresholdPct": 25,
+      "markerName": ".stfolder"
+    },
+    {
+      "id": "default",
+      "label": "Default Folder",
+      "filesystemType": "basic",
+      "path": "/srv/data/st-default",
+      "type": "readwrite",
+      "devices": [
+{% for host in groups['private-agents'] %}
+        {
+          "deviceID": "{{ hostvars[host]['syncthing_myID'] }}",
+          "introducedBy": ""
+        },
+{% endfor %}
+      ],
+      "rescanIntervalS": 5,
+      "fsWatcherEnabled": false,
+      "fsWatcherDelayS": 10,
+      "ignorePerms": false,
+      "autoNormalize": true,
+      "minDiskFree": {
+        "value": 1,
+        "unit": "%"
+      },
+      "versioning": {
+        "type": "",
+        "params": {}
+      },
+      "copiers": 0,
+      "pullers": 0,
+      "hashers": 0,
+      "order": "random",
+      "ignoreDelete": false,
+      "scanProgressIntervalS": 0,
+      "pullerPauseS": 0,
+      "maxConflicts": 10,
+      "disableSparseFiles": false,
+      "disableTempIndexes": false,
+      "paused": false,
+      "weakHashThresholdPct": 25,
+      "markerName": ".stfolder"
+    }
+  ],
+  "devices": [
+{% for host in groups['private-agents'] %}
+    {
+      "deviceID": "{{ hostvars[host]['syncthing_myID'] }}",
+      "name": "{{ hostvars[host]['ansible_fqdn'] }}",
+      "addresses": [
+        "tcp://{{ host }}"
+      ],
+      "compression": "always",
+      "certName": "",
+      "introducer": true,
+      "skipIntroductionRemovals": false,
+      "introducedBy": "",
+      "paused": false,
+      "allowedNetworks": [],
+      "autoAcceptFolders": false
+    },
+{% endfor %}
+  ],
+  "gui": {
+    "enabled": true,
+    "address": "0.0.0.0:8384",
+    "user": "",
+    "password": "",
+    "useTLS": false,
+    "apiKey": "{{ syncthing_apikey }}",
+    "insecureAdminAccess": false,
+    "theme": "default",
+    "debugging": false,
+    "insecureSkipHostcheck": false,
+    "insecureAllowFrameLoading": false
+  },
+  "options": {
+    "listenAddresses": [
+      "default"
+    ],
+    "globalAnnounceServers": [
+      "default"
+    ],
+    "globalAnnounceEnabled": false,
+    "localAnnounceEnabled": true,
+    "localAnnouncePort": 21027,
+    "localAnnounceMCAddr": "[ff12::8384]:21027",
+    "maxSendKbps": 0,
+    "maxRecvKbps": 0,
+    "reconnectionIntervalS": 60,
+    "relaysEnabled": true,
+    "relayReconnectIntervalM": 10,
+    "startBrowser": true,
+    "natEnabled": true,
+    "natLeaseMinutes": 60,
+    "natRenewalMinutes": 30,
+    "natTimeoutSeconds": 10,
+    "urAccepted": -1,
+    "urSeen": 3,
+    "urUniqueId": "{{ ur_UniqueId }}",
+    "urURL": "https://data.syncthing.net/newdata",
+    "urPostInsecurely": false,
+    "urInitialDelayS": 1800,
+    "restartOnWakeup": true,
+    "autoUpgradeIntervalH": 0,
+    "upgradeToPreReleases": false,
+    "keepTemporariesH": 24,
+    "cacheIgnoredFiles": false,
+    "progressUpdateIntervalS": 5,
+    "limitBandwidthInLan": false,
+    "minHomeDiskFree": {
+      "value": 1,
+      "unit": "%"
+    },
+    "releasesURL": "https://upgrades.syncthing.net/meta.json",
+    "alwaysLocalNets": [],
+    "overwriteRemoteDeviceNamesOnConnect": false,
+    "tempIndexMinBlocks": 10,
+    "unackedNotificationIDs": [],
+    "trafficClass": 0,
+    "weakHashSelectionMethod": "auto",
+    "stunServers": [
+      "default"
+    ],
+    "stunKeepaliveSeconds": 24,
+    "kcpNoDelay": false,
+    "kcpUpdateIntervalMs": 25,
+    "kcpFastResend": false,
+    "kcpCongestionControl": true,
+    "kcpSendWindowSize": 128,
+    "kcpReceiveWindowSize": 128,
+    "defaultFolderPath": "/srv/data/"
+  },
+  "ignoredDevices": [],
+  "ignoredFolders": []
+}

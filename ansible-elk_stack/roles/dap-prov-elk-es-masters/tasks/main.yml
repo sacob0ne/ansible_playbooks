@@ -1,0 +1,38 @@
+---
+- name: Copy Elasticsearch Master Dockerfile, docker-compose and all config files
+  synchronize: 
+    src: ../../../dockers/elk-stack/elasticsearch/
+    dest: /opt/es-master/
+    use_ssh_args: yes
+
+- name: Add custom Docker repository to Dockerfile (if present)
+  command: bash -c "sed -i 's|^FROM |FROM {{ custom_registry }}|' /opt/es-master/Dockerfile"
+  ignore_errors: yes
+
+- file:
+    path: /opt/elasticsearch/data 
+    owner: centos
+    group: centos
+    state: directory
+
+- file:
+    path: /var/log/elasticsearch 
+    owner: centos
+    group: centos
+    state: directory
+
+- replace:
+    path: /opt/es-master/docker-compose.yml
+    regexp: 'es-role-name'
+    replace: 'es-master'
+    backup: no
+
+- name: Copy Elasticsearch Master Environment file
+  template: src=es-master.jinja2 dest=/opt/es-master/es-master.env
+
+- name: Run Elasticsearch Master docker compose
+  shell: docker-compose up --build -d
+  args:
+    chdir: /opt/es-master
+  register: command_result
+  failed_when: "'failed to build' in command_result.stderr or 'is invalid because' in command_result.stderr"

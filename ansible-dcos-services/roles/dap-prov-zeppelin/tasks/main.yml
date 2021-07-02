@@ -1,0 +1,11 @@
+---
+- name: Deploy zeppelin
+  command: dcos marathon app add "{{ item }}"
+  with_items:
+    - "../../dcos/dap-uk/marathon\ json\ -\ running/zeppelin/marathon.json"
+
+- name: Check if service has been deployed correctly
+  command: bash -c "dcos marathon app list | grep "zeppelin" | awk '{print $6}'"
+  register: testit
+  retries: 30
+  until: testit.stdout == "---"

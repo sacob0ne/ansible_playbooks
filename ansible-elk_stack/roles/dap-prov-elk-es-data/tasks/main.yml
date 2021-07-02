@@ -1,0 +1,38 @@
+---
+- name: Copy Elasticsearch Data Dockerfile, docker-compose and all config files
+  synchronize: 
+    src: ../../../dockers/elk-stack/elasticsearch/
+    dest: /opt/es-data/
+    use_ssh_args: yes
+
+- name: Add custom Docker repository to Dockerfile (if present)
+  command: bash -c "sed -i 's|^FROM |FROM {{ custom_registry }}|' /opt/es-data/Dockerfile"
+  ignore_errors: yes
+
+- file:
+    path: /opt/elasticsearch/data 
+    owner: centos
+    group: centos
+    state: directory
+
+- file:
+    path: /var/log/elasticsearch 
+    owner: centos
+    group: centos
+    state: directory
+
+- replace:
+    path: /opt/es-data/docker-compose.yml
+    regexp: 'es-role-name'
+    replace: 'es-data'
+    backup: no
+
+- name: Copy Elasticsearch Data Environment file
+  template: src=es-data.jinja2 dest=/opt/es-data/es-data.env
+
+- name: Run Elasticsearch Data docker compose
+  shell: docker-compose up --build -d
+  args:
+    chdir: /opt/es-data
+  register: command_result
+  failed_when: "'failed to build' in command_result.stderr or 'is invalid because' in command_result.stderr"

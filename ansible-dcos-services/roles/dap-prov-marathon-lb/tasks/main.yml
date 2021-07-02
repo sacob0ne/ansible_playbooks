@@ -1,0 +1,11 @@
+---
+- name: Deploy marathon-lb
+  command: dcos package install marathon-lb --package-version={{ marathon_lb_ver }} --options "{{ item }}" --yes
+  with_items:
+    - "../../dcos/dap-uk/options\ json\ -\ install\ and\ upgrade/marathon-lb/marathon-lb-config.json"  
+
+- name: Check if service has been deployed correctly
+  command: bash -c "dcos marathon app list | grep "marathon-lb" | awk '{print $6}'"
+  register: testit
+  retries: 30
+  until: testit.stdout == "---"

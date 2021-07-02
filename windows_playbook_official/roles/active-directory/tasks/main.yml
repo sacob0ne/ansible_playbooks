@@ -1,0 +1,30 @@
+# ansible-playbook -i test master.yml --extra-vars "db=True" (or "app=True") for defining the correct OU from command line
+- name: copy ad.json
+  win_copy: src=ad.json dest=C:\\Python27\
+
+- name: copy ad.py
+  win_copy: src=ad.py dest=C:\\Python27\
+
+- name: copy app.py
+  win_copy: src=app.py dest=C:\\Python27\
+  when: app is defined
+
+- name: copy db.py
+  win_copy: src=db.py dest=C:\\Python27\
+  when: db is defined
+
+- name: Create Computer Object for Application
+  raw: cd C:\Python27\ ; .\python.exe C:\Python27\app.py
+  when: app is defined
+
+- name: Create Computer Object for Database
+  raw: cd C:\Python27\ ; .\python.exe C:\Python27\db.py
+  when: db is defined
+
+- name: Delete Python's scripts for Active Directory
+  raw: cd C:\Python27 ; del ad.py ; del ad.json ; del app.py
+  when: app is defined
+
+- name: Delete Python's scripts for Active Directory
+  raw: cd C:\Python27 ; del ad.py ; del ad.json ; del db.py
+  when: db is defined

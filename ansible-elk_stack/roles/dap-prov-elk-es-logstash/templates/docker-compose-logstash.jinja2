@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  es-logstash:
+    logging:
+     driver: none
+    build: .
+    container_name: es-logstash
+    volumes:
+      - /var/log/logstash:/usr/share/logstash/logs
+    restart: unless-stopped
+    network_mode: host
+    dns:
+      - {{ groups['masters'][0] }}
+{% if groups['masters'][1] is defined %}
+      - {{ groups['masters'][1] }}
+      - {{ groups['masters'][2] }}
+{% endif %}
+{% if host_dns1.stdout %}
+      - {{ host_dns1.stdout }}
+{% endif %}
+{% if host_dns2.stdout %}
+      - {{ host_dns2.stdout }}
+{% endif %} 
+    expose:
+      - 5044
+      - 9600

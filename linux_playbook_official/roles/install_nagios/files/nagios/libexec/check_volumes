@@ -1,0 +1,75 @@
+#!/bin/sh
+#set -x
+
+message1=""
+message2="|"
+percent=0%
+volume=""
+percent100=""
+volume100=""
+warn="$1"
+crit="$2"
+
+[ -z "$warn" ] && { typeset -i warn=90; }
+[ -z "$crit" ] && { typeset -i crit=95; }
+
+export mpFile=/tmp/`date '+%Y%m%d%H%M%S'`
+
+#echo "2.0G 0 2.0G 100% /devPROVA" >> $mpFile
+#echo "2.0G 0 2.0G 99% /devPROVA" >> $mpFile
+
+#df -h | grep -v Mounted |awk '{print $2,$3,$4,$5,$6}' > $mpFile
+df -h | awk '!$2{getline x;$0=$0 x}{printf "%-35s %10s %6s %6s %4s %s\n",$1,$2,$3,$4,$5,$6}' | grep -v Mounted |awk '{print $2,$3,$4,$5,$6}' > $mpFile
+
+#Size  Used Avail Use% MountPoint
+
+while read total used free usedPercent mountPoint ; do
+        #echo "Total: "$total " Used: "$used "Free: "$free " used for "${usedPercent} "mount point: "${mountPoint} >> /tmp/prova.txt
+        if [ ! -z "$(echo $(echo -n $usedPercent | head -c -1) $(echo -n $percent | head -c -1) | awk '{ if($1 > $2) { print "TRUE"; } }')" ]
+        #if [ ! -z "$(echo $(echo -n $usedPercent | head -c -1) $(echo -n $percent | head -c -1) | awk '{ print ($1 > $2) ? "true" : "FALSE" }')" ]
+                then 
+                        if [ "$usedPercent" == "100%" ]; 
+                                then 
+                                        percent100=$usedPercent
+                                        volume100=${mountPoint}
+                        fi
+                        percent=$usedPercent
+                        volume=${mountPoint}
+
+        fi
+        #message1=$message1" "${mountPoint}": Total: "$total" - Used: "$used" - Free: "$free" ("${usedPercent}"),"
+        message2=$message2"'"${mountPoint}" %'="${usedPercent}";"$warn";"$crit" "
+done < $mpFile
+
+#message1=$(echo -n $message1 | head -c -1)  #cut last ","
+message1="File system Max using (%): "$percent", file system: "$volume
+message=$message1$message2 
+rm $mpFile
+
+if [ -z "$percent100" ]
+then
+
+        if [ -z "$percent" ]
+        then
+                echo "UNKNOWN - Could not gather memory usage"
+                exit 3
+        fi
+
+        if [ ! -z "$(echo "$percent $crit" | awk '{ if($1 > $2) { print "TRUE"; } }')" ]
+        then
+                echo "CRITICAL: "$message
+                exit 2
+
+        elif [ ! -z "$(echo "$percent $warn" | awk '{ if($1 > $2) { print "TRUE"; } }')" ]
+        then
+                echo "WARNING: "$message
+                exit 1
+
+        else
+                echo "OK: "$message
+                exit 0
+        fi
+else
+        echo "CRITICAL: "$message
+        exit 2
+fi

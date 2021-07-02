@@ -1,0 +1,7 @@
+---
+# file: infra.yml
+
+- hosts: linux
+
+  roles:
+    - common

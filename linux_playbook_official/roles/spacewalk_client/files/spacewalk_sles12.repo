@@ -1,0 +1,7 @@
+[spacewalk]
+name=spacewalk-client
+enabled=1
+autorefresh=1
+baseurl=https://sasv02fj.saipemnet.saipem.intranet/pub/suse/sles12/systemsmanagement_spacewalk_2.4/
+type=rpm-md
+gpgcheck=0

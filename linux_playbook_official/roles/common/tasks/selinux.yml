@@ -1,0 +1,6 @@
+---
+# file: roles/common/tasks/selinux.yml
+
+- package: name=libselinux-python state=present
+- selinux: policy=targeted state=permissive
+- selinux: state=disabled

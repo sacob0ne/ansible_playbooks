@@ -1,0 +1,79 @@
+#!/bin/bash
+file={{ file }}
+bucket="{{ bucket_name }}"
+key="{{ access_key }}"
+timestamp=$(date -u "+%Y-%m-%d %H:%M:%S")
+prefix="{{ env }}"
+region="eu-central-1"
+signed_headers="date;host;x-amz-acl;x-amz-content-sha256;x-amz-date"
+
+if [[ $(uname) == "Darwin" ]]; then
+  iso_timestamp=$(date -ujf "%Y-%m-%d %H:%M:%S" "${timestamp}" "+%Y%m%dT%H%M%SZ")
+  date_scope=$(date -ujf "%Y-%m-%d %H:%M:%S" "${timestamp}" "+%Y%m%d")
+  date_header=$(date -ujf "%Y-%m-%d %H:%M:%S" "${timestamp}" "+%a, %d %h %Y %T %Z")
+else
+  iso_timestamp=$(date -ud "${timestamp}" "+%Y%m%dT%H%M%SZ")
+  date_scope=$(date -ud "${timestamp}" "+%Y%m%d")
+  date_header=$(date -ud "${timestamp}" "+%a, %d %h %Y %T %Z")
+fi
+
+payload_hash() {
+  local output=$(shasum -ba 256 "$file")
+  echo "${output%% *}"
+}
+
+canonical_request() {
+  echo "PUT"
+  echo "/${prefix}/${file}"
+  echo ""
+  echo "date:${date_header}"
+  echo "host:${bucket}.s3.amazonaws.com"
+  echo "x-amz-acl:public-read"
+  echo "x-amz-content-sha256:$(payload_hash)"
+  echo "x-amz-date:${iso_timestamp}"
+  echo ""
+  echo "${signed_headers}"
+  printf "$(payload_hash)"
+}
+
+canonical_request_hash() {
+  local output=$(canonical_request | shasum -a 256)
+  echo "${output%% *}"
+}
+
+string_to_sign() {
+  echo "AWS4-HMAC-SHA256"
+  echo "${iso_timestamp}"
+  echo "${date_scope}/${region}/s3/aws4_request"
+  printf "$(canonical_request_hash)"
+}
+
+signature_key() {
+  local secret=$(printf "AWS4{{ secret_key }}" | hex_key)
+  local date_key=$(printf ${date_scope} | hmac_sha256 "${secret}" | hex_key)
+  local region_key=$(printf ${region} | hmac_sha256 "${date_key}" | hex_key)
+  local service_key=$(printf "s3" | hmac_sha256 "${region_key}" | hex_key)
+  printf "aws4_request" | hmac_sha256 "${service_key}" | hex_key
+}
+
+hex_key() {
+  hexdump -ve '1/1 "%.2x"'; echo
+}
+
+hmac_sha256() {
+  local hexkey=$1
+  openssl dgst -binary -sha256 -mac HMAC -macopt hexkey:${hexkey}
+}
+
+signature() {
+  string_to_sign | hmac_sha256 $(signature_key) | hex_key | sed "s/^.* //"
+}
+
+curl \
+  -T "${file}" \
+  -H "Authorization: AWS4-HMAC-SHA256 Credential=${key}/${date_scope}/${region}/s3/aws4_request,SignedHeaders=${signed_headers},Signature=$(signature)" \
+  -H "Date: ${date_header}" \
+  -H "x-amz-acl: public-read" \
+  -H "x-amz-content-sha256: $(payload_hash)" \
+  -H "x-amz-date: ${iso_timestamp}" \
+  "https://${bucket}.s3.amazonaws.com/${prefix}/${file}"

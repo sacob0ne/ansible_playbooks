@@ -1,0 +1,161 @@
+'-------------------------------------------------------------------------------------------------------
+'check_OlderFile.vbs
+'
+'author: Filippo Paviglianiti
+'date: 08/18/2015
+'
+'Description:
+'	For a given directory, find the older modified file and check if its modification
+'	date is older than [w] or [c] days.  Also check if the file size is at least [z] bytes.
+'	Output values: 0=OK, 1=Warning, 2=critical, 3=unknown
+
+'	This script can be useful for monitoring application log file names that change with the date.
+
+'	Intended for use with Nagios check_nrpe / nsclient++.
+'
+'Arguments:
+'	directory path
+'	warning age	(in days)	warning failure if most recent file is [x] minutes old.
+'	critical age (in days)	critical failure if most recent file is [y] minutes old.
+'	file size (in bytes)		critical failure if file size is < [z] byes.
+'sample execution: 
+'	cscript  check_OlderFile.vbs c:\testdir\ 1440 2880 100
+'
+'Notes:
+'	- I commented out the output file feature: it's not needed for the main purpose (but it may be useful).
+'	- Files with the "hidden" attribute are specifically excluded: this can be easily changed if needed.
+'	
+'-------------------------------------------------------------------------------------------------------
+
+'On Error Resume Next
+ON ERROR GOTO 0
+Err.Clear  
+
+  Dim fso, folder, files, OutputFile
+  Dim argFolder, argWarning, argCritical, argSize
+  Dim fName, fSize, fMod
+  Dim fTop, fTopDate, fTopSize, fAge
+
+  
+  'Output values expected by Nagios
+	CONST Exit_OK = 0
+	CONST Exit_Warning = 1
+	CONST Exit_Critical = 2
+	CONST Exit_Unknown = 3
+
+	
+ 'validate arguments
+	  If Wscript.Arguments.Count <> 4 Then
+		Wscript.Echo "Must enter 4 arguments: directory C W S; i.e. c:\testdir\ 1440 2880 100"
+		wscript.Quit(Exit_Unknown)
+	  End If
+  
+	  If NOT IsNumeric(Wscript.Arguments.Item(1)) Then
+		wscript.echo "enter a valid Warning age (minutes): i.e. 1440" 
+		wscript.Quit(Exit_Unknown)
+	  End If
+		
+	  If NOT IsNumeric(Wscript.Arguments.Item(2)) Then
+		wscript.echo "enter a valid Critical age (minutes): i.e. 2880" 
+		wscript.Quit(Exit_Unknown)
+	  End If 
+
+	  If NOT IsNumeric(Wscript.Arguments.Item(3)) Then
+		wscript.echo "enter a valid minimum file size (bytes): i.e. 100" 
+		wscript.Quit(Exit_Unknown)
+	  End If 
+	
+  argFolder = Wscript.Arguments.Item(0)
+  argWarning = Abs(Wscript.Arguments.Item(1))*24*60	'Abs: absolute value required for comparison later, reported to minutes
+  argCritical = Abs(Wscript.Arguments.Item(2))*24*60	
+  argSize = Abs(Wscript.Arguments.Item(3))	
+  
+  Set fso = CreateObject("Scripting.FileSystemObject")
+  
+  ''create an empty output file for saving output later on.
+  'Set OutputFile = fso.CreateTextFile(argFolder&"\FileList.txt", True)
+    
+  'Check if directory exists before attempting to open 
+  If fso.FolderExists(argFolder) Then
+	Set folder = fso.GetFolder(argFolder)
+	Set files = folder.Files
+  Else
+	wscript.echo "Invalid directory: " & argFolder 
+	wscript.Quit(Exit_Unknown)
+  End If
+ 
+  'Check if directory has at least one file before going any further
+  If folder.Files.Count = 0 Then
+	wscript.echo "Empty directory: " & argFolder 
+	wscript.Quit(Exit_Critical)
+  End If
+ 
+  'loop through array of files and save name, modified date, and file size.
+
+
+fTopDate = Now
+
+
+  For each fileIdx In files
+  		'Filter out files with "hidden" attribute:  constant=Hidden; value=2
+		If (NOT fileIdx.Attributes and 2) Then
+		fName = fileIdx.Name
+		fMod  = fileIdx.DateLastModified 
+		fSize = fileIdx.Size
+
+		''write data to output file.
+		'OutputFile.WriteLine(folderIdx.Name & vbTab & fMod & vbTab & fSize)
+		
+		''write data to console.
+		'Wscript.echo(fName & vbTab & fMod & vbTab & fSize)
+
+		'compare each file with one another and float older modified file to the top.
+
+		If fMod < fTopDate Then
+			fTop = fName
+			fTopDate = fMod
+			fTopSize = fSize
+		End If
+	End If
+  Next
+  
+  'Determine age, in minutes, of most recent file: DateDiff interval: yyyy-year, m-month, d-day, h=hour, n=minute, s=second
+  fAge = Abs(DateDiff("n", fTopDate, Now)) 
+  
+  'Determine if file exceeds either warning or critical levels
+  If fAge > argCritical Then
+		'Wscript.echo("critical: " & fTop & " is " & fAge & " minutes old.")  
+		'Wscript.echo("critical: " & fTop & " is older than " &argCritical/1440 & " days" )  
+		Wscript.echo("CRITICAL: there is almost one file older than " &argCritical/1440 & " days in directory " &argFolder  )  
+		Wscript.Quit(Exit_Critical)
+  elseif fAge > argWarning Then
+		'Wscript.echo("warning: " & fTop & " is " & fAge & " days old.")
+		'Wscript.echo("warning: " & fTop & " is older than " &argWarning/1440 & " days" )  
+		Wscript.echo("WARNING: there is almost one file older than " &argWarning/1440 & " days in directory " &argFolder  )  
+		Wscript.Quit(Exit_Warning)
+  elseif fTopSize < argSize Then
+		Wscript.echo("critcal: " & fTop & " is only " & fTopSize & " bytes.")
+		Wscript.Quit(Exit_Critical)
+  else
+		'Wscript.echo("pass: " & fTop & " is " & fAge & " days old.") 
+		Wscript.echo("OK: no file is older than " &argCritical/1440 & " days (CRITICAL) or " &argWarning/1440 & " days (WARNING) in " &argFolder & " directory"  ) 
+		Wscript.Quit(Exit_OK)
+  End If
+
+  'Wscript.echo(vbLf & "current date & time: " & Now )
+  'Wscript.echo(vbLf & "Most recent file: " & fTop & vbTab & fTopDate)
+  
+  'clean up
+  OutputFile.Close
+  Set fso = Nothing
+  Set folder = Nothing
+  Set files = Nothing
+  
+  ' The following line should never be executed / reached
+    Wscript.Quit(Exit_Unknown) 
+    Wscript.echo(vbLf & "Happy days :)")
+	
+  'End of script!
+  'Wscript.echo(vbLf & "Happy days :)")
+
+  

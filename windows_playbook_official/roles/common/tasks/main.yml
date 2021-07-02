@@ -1,0 +1,20 @@
+# This playbook installs Windows updates
+# Run with the following command:
+#   ansible-playbook update-win.yml --ask-pass --u Administrator
+
+- name: Install Windows updates
+  win_updates:
+    category_names: ['SecurityUpdates','CriticalUpdates','UpdateRollups','Updates']
+    ignore_errors: true
+
+- name: Restart machine
+  raw: shutdown /r /f /c "Ansible updates triggered"
+  async: 0
+  poll: 0
+  ignore_errors: true
+
+- name: Waiting for server to come back
+  local_action: wait_for
+                host={{ inventory_hostname }}
+                state=started
+                timeout=240

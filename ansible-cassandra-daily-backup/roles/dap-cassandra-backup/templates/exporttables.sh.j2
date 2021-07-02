@@ -1,0 +1,39 @@
+tempfolder={{ folder }}
+cassandranode=node-0-server.cassandra.mesos
+backupfile={{ file }}
+cqlfile=exporttables.cql
+test=$(docker run -d {{ cassandra_docker }} sleep 1000000 | cut -c1-4)
+
+#Print container ID
+echo $test
+
+#Copy .cql file into Docker container
+docker cp /opt/$cqlfile $test:/tmp/
+
+echo "
+Copy of .CQL file into Docker container successfully, now let's backup tables.
+"
+
+#Create folder where to place the .csv files
+docker exec -i $test mkdir /$tempfolder
+
+#Launch the .cql file into Docker container
+docker exec -i $test cqlsh $cassandranode -f /tmp/$cqlfile
+
+#Create folder where to place the .csv files from Docker container into host
+sudo mkdir /$tempfolder
+
+docker cp $test:/$tempfolder/. /$tempfolder/
+
+#Compress .csv files
+cd /$tempfolder/ && tar czf $backupfile *
+
+#Stop & remove Docker container
+docker stop $test
+docker rm $test
+
+echo "
+==========
+SUCCESS!
+==========
+"

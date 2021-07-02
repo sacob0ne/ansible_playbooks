@@ -1,0 +1,4 @@
+---
+- name: Allow root access on AWS machines
+  include_role:
+    name: ../../ansible-dap-allow-root-access/roles/dap-allow-root-access

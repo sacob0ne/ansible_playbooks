@@ -1,0 +1,31 @@
+---
+# file: infra.yml
+
+- hosts: localhost
+  user: root
+  vars_files: 
+      - ../_env/"{{ inventory_file | basename }}-vars.yml"
+  roles:
+    - { role: dap-prov-dcos-login, tags: ["marathon-lb", "syncthing-acl", "confluent-kafka", "schema-registry", "brokerproxy", "brokerproxy-schema-registry", "replicator", "rest-proxy", "cassandra", "chronos", "connect", "etcd", "etcd-browser", "kafka-connect-ui", "spark", "zeppelin"] }
+    - { role: dap-prov-marathon-lb, tags: marathon-lb }
+    - { role: dap-prov-syncthing-acl, tags: syncthing-acl }
+    - { role: dap-prov-confluent-kafka, tags: confluent-kafka }
+    - { role: dap-prov-schema-registry, tags: schema-registry }
+    - { role: dap-prov-brokerproxy, tags: brokerproxy }
+    - { role: dap-prov-brokerproxy-schema-registry, tags: brokerproxy-schema-registry }
+    - { role: dap-prov-replicator, tags: replicator }
+    - { role: dap-prov-rest-proxy, tags: rest-proxy }
+    - { role: dap-prov-cassandra, tags: cassandra }
+    - { role: dap-prov-chronos, tags: chronos }
+    - { role: dap-prov-connect, tags: connect }
+    - { role: dap-prov-etcd, tags: etcd }
+    - { role: dap-prov-etcd-browser, tags: etcd-browser }
+    - { role: dap-prov-kafka-connect-ui, tags: kafka-connect-ui }
+    - { role: dap-prov-spark, tags: spark }
+    - { role: dap-prov-zeppelin, tags: zeppelin }
+
+- hosts: private-agents
+  user: root
+  roles:
+    - ../ansible-syncthing/roles/dap-prov-syncthing
+  tags: syncthing-acl

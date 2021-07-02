@@ -1,0 +1,11 @@
+---
+- name: Deploy etcd
+  command: dcos package install etcd --package-version={{ etcd_ver }} --options "{{ item }}" --yes
+  with_items:
+    - "../../dcos/dap-uk/options\ json\ -\ install\ and\ upgrade/etcd/etcd.json"
+
+- name: Check if service has been deployed correctly
+  command: bash -c "dcos marathon app list | grep "etcd" | awk '{print $6}'"
+  register: testit
+  retries: 30
+  until: testit.stdout == "---"

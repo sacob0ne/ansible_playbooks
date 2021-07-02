@@ -1,0 +1,40 @@
+- name: Copy Python Installer 
+  win_copy: src=python-2.7.11.amd64.msi dest=C:\\
+
+- name: Install Python for Windows 2008 R2
+#  raw: 'C:\python-2.7.11.amd64.msi /quiet /passive'
+  win_msi: 
+    path: 'C:\\python-2.7.11.amd64.msi'
+    state: present
+    extra_args: "/quiet"
+    wait: true
+  when: (ansible_distribution == 'Microsoft Windows Server 2008 R2 Standard ' and ansible_distribution_version == '6.1.7601.65536')
+
+- name: Install Python for Windows 2012 R2
+  win_msi: path=C:\\python-2.7.11.amd64.msi wait=true state=present
+  when: (ansible_distribution == 'Microsoft Windows Server 2012 R2 Standard' and ansible_distribution_version == '6.3.9600.0')
+#  when: (ansible_distribution == 'Microsoft Windows NT 6.3.9600.0' and ansible_distribution_version == '6.3.9600.0')
+
+- name: Waiting for Python's installation is finished
+  local_action: wait_for
+                host={{ inventory_hostname }}
+                state=started
+                timeout=10
+
+- name: Copy PIP Installer
+  win_copy: src=get-pip.py dest=C:\\Python27\
+
+- name: Install PIP
+  raw: cd C:\Python27\ ; .\python.exe C:\Python27\get-pip.py
+
+- name: Copy Python-LDAP Installer 
+  win_copy: src=python_ldap-2.4.25-cp27-none-win_amd64.whl dest=C:\\Python27\Scripts\
+
+- name: Install Python-LDAP
+  raw: cd C:\Python27\Scripts\ ; .\pip.exe install .\python_ldap-2.4.25-cp27-none-win_amd64.whl
+
+- name: Delete Python-LDAP Installer
+  raw: cd C:\Python27\Scripts\ ; del python_ldap-2.4.25-cp27-none-win_amd64.whl
+
+- name: Delete PIP installer
+  raw: cd C:\Python27\ ; del get-pip.py

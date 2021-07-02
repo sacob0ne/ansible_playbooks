@@ -1,0 +1,60 @@
+---
+# file: roles/join_domain/tasks/sles.yml
+
+- name: Install ansible and prerequisite
+  package: name="{{item}}" state=present
+  with_items:
+    - samba-winbind
+    - samba-winbind-32bit
+    - krb5-client
+
+- name: Join to saipemnet domain
+  command: yast2 samba-client configure workgroup=SAIPEMNET
+  ignore_errors: True
+- command: yast2 samba-client winbind enable
+  ignore_errors: True
+- command: yast2 samba-client isdomainmember domain=SAIPEMNET.SAIPEM.INTRANET
+  ignore_errors: True
+
+- name: Set up secuirity ADS on samba
+  ini_file: 
+    dest: /etc/samba/smb.conf
+    section: global
+    option: "{{'\t'}}security"
+    value: ADS
+    backup: yes
+
+- name: Deny guests to access samba
+  ini_file: 
+    dest: /etc/samba/smb.conf
+    section: global
+    option: "{{'\t'}}usershare allow guests"
+    value: No
+    backup: yes
+
+- name: Set up kerberos method to secrets and keytab
+  ini_file: 
+    dest: /etc/samba/smb.conf
+    section: "global"
+    option: "{{'\t'}}kerberos method"
+    value: secrets and keytab
+    backup: yes
+
+- name: Set up realm to SAIPEMNET.SAIPEM.INTRANET on smb.conf
+  ini_file: 
+    dest: /etc/samba/smb.conf
+    section: global
+    option: "{{'\t'}}realm"
+    value: SAIPEMNET.SAIPEM.INTRANET
+    backup: yes
+
+- name: Configuring krb5.conf
+  template:
+    src: krb5.conf.j2
+    dest: /etc/krb5.conf
+    backup: yes
+
+- command: yast2 samba-client joindomain domain=SAIPEMNET.SAIPEM.INTRANET user=saipemnet\\saxt0781 password=<PASSWORD>
+  ignore_errors: True
+  args:
+    creates: /var/lib/samba/smb_krb5/krb5.conf.SAIPEMNET

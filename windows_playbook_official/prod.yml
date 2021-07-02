@@ -1,0 +1,7 @@
+---
+# file: prod.yml
+
+- hosts: prod
+  roles:
+    - mcafee
+    - nagios

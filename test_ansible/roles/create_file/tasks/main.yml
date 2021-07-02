@@ -1,0 +1,9 @@
+---
+# tasks file for test_ansible
+- name: create empty file
+  command: touch /tmp/testpeppe.txt
+
+- name: write something to file
+  lineinfile:
+    path: /tmp/testpeppe.txt
+    line: "Ciao Giuseppe"

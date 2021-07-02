@@ -1,0 +1,5 @@
+---
+# file: master.yml
+
+- include: infra.yml
+- include: prod.yml

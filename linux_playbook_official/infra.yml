@@ -1,0 +1,13 @@
+---
+# file: infra.yml
+
+- hosts: all
+
+  roles:
+    - common
+    - spacewalk_client
+    - active-directory
+    - join_domain
+    - role: ntp
+      ntp_config_server: [ timeserver.eni.pri ]
+    - create_dns

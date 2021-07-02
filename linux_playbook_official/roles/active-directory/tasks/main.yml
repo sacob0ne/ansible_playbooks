@@ -1,0 +1,40 @@
+- name: copy ad.json
+  copy: src=ad.json dest=/tmp/ mode=0777
+
+- name: copy ad.py
+  copy: src=ad.py dest=/tmp/ mode=0777
+
+- name: copy app.py
+  copy: src=app.py dest=/tmp/ mode=0777
+  when: layer == "frontend" or layer == "backend"
+#  when: app is defined
+
+- name: copy db.py
+  copy: src=db.py dest=/tmp/ mode=0777
+#  when: db is defined
+  when: layer == "database"
+
+- name: Install Python LDAP
+  package: name=python-ldap state=present
+
+- name: Create Computer Object for Application
+  #script: /tmp/test.py
+  raw: cd /tmp/ ; ./app.py
+  when: layer == "frontend" or layer == "backend"
+#  when: app is defined
+
+- name: Create Computer Object for DB
+  #script: /tmp/test.py
+  raw: cd /tmp/ ; ./db.py
+  when: layer == "database"
+#  when: db is defined
+
+- name: Delete Python's scripts for Active Directory
+  raw: cd /tmp/ ; rm -rf ad.py ad.json app.py
+  when: layer == "frontend" or layer == "backend"
+#  when: app is defined
+
+- name: Delete Python's scripts for Active Directory
+  raw: cd /tmp/ ; rm -rf ad.py ad.json db.py
+  when: layer == "database"
+#  when: db is defined

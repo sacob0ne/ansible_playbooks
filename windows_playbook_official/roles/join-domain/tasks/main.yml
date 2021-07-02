@@ -1,0 +1,19 @@
+# playbook joins Windows to a domain
+# Run with the following command:
+#   ansible-playbook joindomain-win.yml --ask-pass --u Administrator
+
+- name: copy join domains.ps1
+  win_copy: src=join-domain.ps1 dest=C:\\ 
+
+- name: Join domain script
+  raw: "C:\\join-domain.ps1 -username saipemnet\\saxt0781 -password <PASSWORD>"
+#  ignore_errors: true
+
+- name: Waiting for server to come back
+  local_action: wait_for
+                host={{ inventory_hostname }}
+                state=started
+                timeout=240
+
+- name: Delete Join Domain's script
+  raw: cd C:\\ ; del join-domain.ps1

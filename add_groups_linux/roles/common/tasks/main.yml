@@ -1,0 +1,11 @@
+---
+- name: Allow sudo to users or groups
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    backup: yes
+    regexp: '^%saipemnet\\\\{{ group }}'
+    line: '%saipemnet\\{{ group }}  ALL=(ALL) NOPASSWD:ALL'
+
+- name: Enable group to winbind
+  shell: sed -i '/^require_membership_of/ s/$/,{{ group }}/' /etc/security/pam_winbind.conf

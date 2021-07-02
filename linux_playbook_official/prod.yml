@@ -1,0 +1,6 @@
+---
+# file: prod.yml
+
+- hosts: prod
+  roles:
+    - install_nagios

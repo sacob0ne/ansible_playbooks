@@ -1,0 +1,63 @@
+---
+- name: Sleep for 30 seconds and continue with play
+  pause:
+    seconds: 30
+
+- name: Create Syncthing ST folder
+  file: path=/opt/syncthing/data/st-default state=directory owner=root group=root
+
+- name: Check if the symbolic link exists
+  stat:
+    path: "{{item}}"
+  register: links
+  with_items:
+  - ["/mnt/sync/folders"]
+
+- name: Create symbolic link if it doesn't exist
+  file:
+    src: "/opt/syncthing/data/st-default"
+    dest: "{{item.item}}"
+    state: link
+  when: item.stat.exists == false
+  with_items:
+  - "{{links.results}}"
+
+- name: Get API-key
+  shell: grep apikey /opt/syncthing/config/config.xml | sed -n 's:.*<apikey>\(.*\)</apikey>.*:\1:p'
+  register: syncthing_apikey_raw
+
+- name: Set syncthing_apikey
+  set_fact:
+    syncthing_apikey: "{{ syncthing_apikey_raw.stdout }}"
+
+- name: Get system configuration
+  uri:
+    url: "http://{{ ansible_default_ipv4.address }}:8384/rest/system/config"
+    return_content: yes
+    HEADER_X-API-Key: "{{syncthing_apikey}}"
+  register: syncthing_config_raw
+  check_mode: no
+
+- name: Set syncthing_myID
+  set_fact:
+    syncthing_myID: "{{ syncthing_config_raw.x_syncthing_id }}"
+
+- name: Set ur_UniqueId
+  set_fact:
+    ur_UniqueId: "{{ syncthing_config_raw.json.options.urUniqueId }}"
+
+- name: Post system configuration
+  uri:
+    url: "http://{{ ansible_default_ipv4.address }}:8384/rest/system/config"
+    method: POST
+    return_content: yes
+    HEADER_X-API-Key: "{{syncthing_apikey}}"
+    body: "{{ lookup('template','../templates/config.json.j2') }}"
+    body_format: "json"
+
+- name: Restart Syncthing service
+  uri:
+    url: "http://{{ ansible_default_ipv4.address }}:8384/rest/system/restart"
+    method: POST
+    return_content: yes
+    HEADER_X-API-Key: "{{syncthing_apikey}}"

@@ -1,0 +1,6 @@
+---
+# file: roles/common/tasks/main.yml
+- include: reboot_linux.yml
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'SLES'
+- include: reboot_windows.yml
+  when: ansible_distribution == 'Microsoft Windows Server 2008 R2 Standard ' or ansible_distribution == 'Microsoft Windows Server 2012 R2 Standard'

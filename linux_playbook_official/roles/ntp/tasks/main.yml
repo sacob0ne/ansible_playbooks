@@ -1,0 +1,27 @@
+---
+
+- name: Add the OS family specific variables
+  include_vars: '{{ ansible_os_family }}{{ ansible_distribution_major_version }}.yml'
+
+- name: Install the required packages in Redhat derivatives
+  package: name=ntp state=present
+
+  #- name: Install the required packages in Redhat derivatives
+  #yum: name=ntp state={{ ntp_pkg_state }}
+  #when: ansible_os_family == 'RedHat'
+  #tags: [ 'package', 'ntp' ]
+  #
+  #- name: Install the required packages in Debian derivatives
+  #apt: name=ntp state={{ ntp_pkg_state }}
+  #when: ansible_os_family == 'Debian'
+  #tags: [ 'package', 'ntp' ]
+
+- name: Copy the ntp.conf template file
+  template: src=ntp.conf.j2 dest=/etc/ntp.conf
+  notify:
+  - restart ntp
+  tags: [ 'configuration', 'package', 'ntp' ]
+
+- name: Start/stop ntp service
+  service: name={{ ntp_service_name }} state=started enabled=yes
+  tags: [ 'service', 'ntp' ]

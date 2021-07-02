@@ -1,0 +1,1 @@
+ansible-playbook -i hosts dap-cassandra-backup.yml --vault-password-file vault.txt -vvv

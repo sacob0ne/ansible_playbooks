@@ -1,0 +1,9 @@
+---
+- name: Deploy chronos
+  command: dcos package install chronos --package-version={{ chronos_ver }} --yes
+
+- name: Check if service has been deployed correctly
+  command: bash -c "dcos marathon app list | grep "chronos" | awk '{print $6}'"
+  register: testit
+  retries: 30
+  until: testit.stdout == "---"

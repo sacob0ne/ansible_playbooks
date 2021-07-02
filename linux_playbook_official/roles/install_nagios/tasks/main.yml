@@ -1,0 +1,70 @@
+---
+# file: roles/install_nagios/tasks/main.yml
+
+- name: Add the OS family specific variables
+  include_vars: "{{ ansible_os_family }}{{ ansible_distribution_major_version }}.yml"
+
+- name: Check if nagios is already present
+  stat: path="{{ nagios_config }}"
+  register: nagios_exist
+  
+- name: Install Nagios client
+  package: name="{{ nagios_packages }}" state=present
+
+- name: Install cifs-utils
+  package: name="{{ cifs_packages }}" state=present
+  
+- name: Copy config file nrpe.cfg
+  copy: src=nrpe_sles.cfg dest="{{ nagios_config }}" force=yes backup=yes owner=root group=root mode=0644
+  when: (nagios_exist.stat.exists == False) and (ansible_distribution == "SLES" )
+
+- name: Copy config file nrpe.cfg
+  copy: src=nrpe_centos.cfg dest="{{ nagios_config }}" force=yes backup=yes owner=root group=root mode=0644
+  when: (nagios_exist.stat.exists == False) and (ansible_distribution == "CentOS" )  
+
+- name: Copy nagios scripts folder 
+  copy: src=nagios dest=/usr/local/ force=no backup=yes owner=root group=root mode=0755
+  when: (nagios_exist.stat.exists == False)
+  
+- name: Copy nagios scripts
+  include: scripts.yml
+  
+#- name: Modify nagios script
+#  include: nrpe.yml
+
+- name: Check if nagios is already present
+  stat: path=/etc/xinetd.d/nrpe
+  register: nagios_post
+ 
+- name: Fix /var/run/nrpe dir missing
+  file: path=/var/run/nrpe state=directory owner=nagios group=nagios mode=755
+  when: (nagios_exist.stat.exists == True)
+
+- name: Enable service
+  service: name={{ nagios_service_name }} state=started enabled=yes
+
+- name: Enable nrpe with xinetd on SLES
+  lineinfile:
+    dest: "{{ nagios_disable_xinetd }}"
+    state: present
+    backup: yes
+    regexp: 'disable'
+    line: '        disable         = yes'
+  when: (ansible_distribution == "SLES" )
+
+- name: Enable nagios service SLES11
+#  command: chkconfig xinetd on
+  command: chkconfig nrpe on
+  when: (ansible_distribution == "SLES" and ansible_distribution_major_version == "11")
+
+- name: Restart nagios service SLES11
+#  service: name=xinetd state=restarted
+  service: name=nrpe state=restarted
+  when: (ansible_distribution == "SLES" and ansible_distribution_major_version == "11")
+
+- name: Restart nagios service SLES12
+  service: name=nrpe.service enabled=yes state=restarted
+  when: (ansible_distribution == "SLES" and ansible_distribution_major_version == "12")
+
+- name: Register to server
+  include: register_to_server.yml

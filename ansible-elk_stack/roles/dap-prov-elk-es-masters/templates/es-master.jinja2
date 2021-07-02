@@ -1,0 +1,16 @@
+ELASTIC_NODE_MASTER=true
+ELASTIC_NODE_DATA=false
+ELASTIC_NODE_INGEST=false
+
+DATA_DIR=/opt/elasticsearch/data
+LOG_DIR=/opt/elasticsearch/logs
+#PID_DIR=/var/run/elasticsearch
+CONF_DIR=/opt/elasticsearch/config/
+
+ES_JAVA_OPTS=-Xms4g -Xmx4g
+HOST={{ ansible_default_ipv4['address'] }}
+MAX_LOCKED_MEMORY=unlimited
+HOSTNAME={{ ansible_hostname }}
+ELASTIC_NODE_MASTER1_HOSTNAME={{ groups['es-masters'][0] }}
+ELASTIC_NODE_MASTER2_HOSTNAME={{ groups['es-masters'][1] }}
+ELASTIC_NODE_MASTER3_HOSTNAME={{ groups['es-masters'][2] }}

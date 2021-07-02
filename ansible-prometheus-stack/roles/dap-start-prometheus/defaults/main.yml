@@ -1,0 +1,27 @@
+---
+prometheus_rules:
+  - "prom_api_alerts.rules"
+  - "prom_mem_alerts.rules"
+  - "prom_cpu_alerts.rules"
+  - "prom_haproxy_alerts.rules"
+  - "prom_hdfs_alerts.rules"
+
+prometheus_rules_new_format:
+  - "prom_up_alerts.rules"
+  - "prom_disk_alerts.rules"
+  - "prom_kafka_alerts.rules"
+  - "prom_mars_alerts.rules"
+  - "prom_map_alerts.rules"
+  - "prom_lightyear_alerts.rules"
+  - "prom_search_alerts.rules"
+  - "prom_recs_alerts.rules"
+  - "prom_tap_alerts.rules"
+
+directories:
+  - "/opt/prometheus/grafana"
+  - "/opt/prometheus/grafana_data"
+  - "/opt/prometheus/prometheus/config"
+  - "/opt/prometheus/prometheus_data"
+  - "/opt/prometheus/alertmanager/config"
+  - "/opt/prometheus/promtool"
+  - "/opt/prometheus/haproxy"

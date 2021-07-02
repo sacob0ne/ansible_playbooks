@@ -1,0 +1,74 @@
+---
+# file: roles/install_nagios/tasks/nrpe.yml
+
+- name: Configure allowed host "{{ nagios_config }}"
+  lineinfile:
+    dest: "{{ nagios_config }}"
+    state: present
+    backup: yes
+    regexp: '^allowed_hosts='
+    line: 'allowed_hosts=<ENTER_YOUR_SERVERS_IP>'
+
+- name: Configure don't blame nrpe "{{ nagios_config }}"
+  lineinfile:
+    dest: "{{ nagios_config }}"
+    state: present
+    backup: yes
+    regexp: '^dont_blame_nrpe='
+    line: 'dont_blame_nrpe=1'
+
+- name: Configure mem free "{{ nagios_config }}"
+  lineinfile:
+    dest: "{{ nagios_config }}"
+    state: present
+    backup: yes
+    regexp: '^command\[check_mem_free\]='
+    line: 'command[check_mem_free]=/usr/local/nagios/libexec/check_free.sh $ARG1$'
+
+- name: Configure uptime "{{ nagios_config }}"
+  lineinfile:
+    dest: "{{ nagios_config }}"
+    state: present
+    backup: yes
+    regexp: '^command\[ux_uptime\]='
+    line: 'command[ux_uptime]=/usr/local/nagios/libexec/check_uptime3 $ARG1$'
+
+- name: Configure volumes "{{ nagios_config }}"
+  lineinfile:
+    dest: "{{ nagios_config }}"
+    state: present
+    backup: yes
+    regexp: '^command\[ux_check_volumes\]='
+    line: 'command[ux_check_volumes]=/usr/local/nagios/libexec/check_volumes $ARG1$'
+
+- name: Configure swap "{{ nagios_config }}"
+  lineinfile:
+    dest: "{{ nagios_config }}"
+    state: present
+    backup: yes
+    regexp: '^command\[check_swap\]='
+    line: 'command[check_swap]=/usr/local/nagios/libexec/check_swap $ARG1$'
+
+- name: Configure cpu "{{ nagios_config }}"
+  lineinfile:
+    dest: "{{ nagios_config }}"
+    state: present
+    backup: yes
+    regexp: '^command\[ux_check_single_cpu\]='
+    line: 'command[ux_check_single_cpu]=/usr/local/nagios/libexec/ux_singleCPUload.sh $ARG1$ $ARG2$'
+
+- name: Configure load "{{ nagios_config }}"
+  lineinfile:
+    dest: "{{ nagios_config }}"
+    state: present
+    backup: yes
+    regexp: '^command\[check_load\]='
+    line: 'command[check_load]=/usr/local/nagios/libexec/check_load $ARG1$'
+
+- name: Configure check cpu "{{ nagios_config }}"
+  lineinfile:
+    dest: "{{ nagios_config }}"
+    state: present
+    backup: yes
+    regexp: '^command\[check_cpu\]='
+    line: 'command[check_cpu]=/usr/local/nagios/libexec/check_cpu.py $ARG1$'

@@ -1,0 +1,143 @@
+---
+- name: Create Directory
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+    mode: 0755
+    owner: centos
+    group: centos
+  with_items: "{{ directories }}"
+
+- name: Copy Prometheus Docker-Compose
+  template:
+    src: ../../../dockers/prometheus-stack-j2/docker-compose/docker-compose0.yml.j2
+    dest: /opt/prometheus/docker-compose.yml
+  delegate_to: "{{ groups['prometheus'][0] }}"
+  run_once: true
+
+- name: Copy Prometheus Docker-Compose
+  template:
+    src: ../../../dockers/prometheus-stack-j2/docker-compose/docker-compose1.yml.j2
+    dest: /opt/prometheus/docker-compose.yml
+  delegate_to: "{{ groups['prometheus'][1] }}"
+  run_once: true
+  when: groups['prometheus'][1] is defined
+
+- name: Copy Grafana Dockerfile
+  template:
+    src: ../../../dockers/prometheus-stack-j2/grafana/Dockerfile.j2
+    dest: /opt/prometheus/grafana/Dockerfile
+
+- name: Copy Prometheus Dockerfile
+  template:
+    src: ../../../dockers/prometheus-stack-j2/prometheus/Dockerfile.j2
+    dest: /opt/prometheus/prometheus/Dockerfile
+
+- name: Copy AlertManager Configuration
+  template:
+    src: ../../../dockers/prometheus-stack-j2/alertmanager/config/config.yml.j2
+    dest: /opt/prometheus/alertmanager/config/config.yml
+
+- name: Copy AlertManager templates
+  copy:
+    src: ../../../dockers/prometheus-stack-j2/alertmanager/templates
+    dest: /opt/prometheus/alertmanager
+
+- name: Copy HAProxy Configuration
+  template:
+    src: ../../../dockers/prometheus-stack-j2/haproxy/haproxy.cfg
+    dest: /opt/prometheus/haproxy/haproxy.cfg
+
+
+#Configure prometheus
+- name: Download & Unarchive promtool
+  unarchive:
+    src: https://s3.eu-central-1.amazonaws.com/dap-file-repository/prometheus-{{ promtool_version }}.linux-amd64.tar.gz
+    dest: /opt/prometheus/promtool
+    remote_src: yes
+
+- name: Copy Prometheus rules to Promtool dir
+  template:
+    src: ../../../dockers/prometheus-stack-j2/prometheus/config/{{ item }}.j2
+    dest: /opt/prometheus/promtool/prometheus-{{ promtool_version }}.linux-amd64/{{ item }}
+  with_items: "{{ prometheus_rules }}"
+  ignore_errors: true
+ 
+- name: Copy Prometheus Storage rule to Promtool dir
+  template:
+    src: ../../../dockers/prometheus-stack-j2/prometheus/config/prom_disk_storage_alerts.rules.j2
+    dest: /opt/prometheus/promtool/prometheus-{{ promtool_version }}.linux-amd64/prom_disk_storage_alerts.rules
+  when: m25 | default("false") | match("true")
+
+- name: Convert .rules to .yml
+  command: bash -c "./promtool update rules \"{{ item }}\""
+  args:
+    chdir: /opt/prometheus/promtool/prometheus-{{ promtool_version }}.linux-amd64/
+  with_items: "prom_disk_storage_alerts.rules"
+  ignore_errors: true
+  when: m25 | default("false") | match("true")
+
+- name: Move newly generated rules under prometheus folder
+  copy:
+    src: /opt/prometheus/promtool/prometheus-{{ promtool_version }}.linux-amd64/{{ item }}.yml
+    dest: /opt/prometheus/prometheus/config/{{ item }}.yml
+    remote_src: yes
+  with_items: "prom_disk_storage_alerts.rules"
+  ignore_errors: true
+  when: m25 | default("false") | match("true")
+
+- name: Get API Names
+  command: bash -c "xmllint --html http://{{ groups['public-agents'][0] }}:9090/haproxy?stats 2> /dev/null | grep {{ item.name }} | head -1 | sed 's#<a name=\"##' | sed 's#\">.*##'"
+  with_items: "{{ apis }}"
+  delegate_to: "{{ groups['public-agents'][0] }}"
+  delegate_facts: true
+  run_once: true
+  when: apis is defined
+
+- name: Convert .rules to .yml
+  command: bash -c "./promtool update rules \"{{ item }}\""
+  args:
+    chdir: /opt/prometheus/promtool/prometheus-{{ promtool_version }}.linux-amd64/
+  with_items: "{{ prometheus_rules }}"
+  ignore_errors: true
+
+- name: Move newly generated rules under prometheus folder
+  copy:
+    src: /opt/prometheus/promtool/prometheus-{{ promtool_version }}.linux-amd64/{{ item }}.yml
+    dest: /opt/prometheus/prometheus/config/{{ item }}.yml
+    remote_src: yes
+  with_items: "{{ prometheus_rules }}"
+  ignore_errors: true
+
+- name: Template Prometheus Rules in new format under prometheus folder
+  template:
+    src: ../../../dockers/prometheus-stack-j2/prometheus/config/{{ item }}.yml.j2
+    dest: /opt/prometheus/prometheus/config/{{ item }}.yml
+  with_items: "{{ prometheus_rules_new_format }}"
+
+- name: Copy Prometheus Config
+  template:
+    src: ../../../dockers/prometheus-stack-j2/prometheus/config/prometheus.yml.j2
+    dest: /opt/prometheus/prometheus/config/prometheus.yml
+
+- name: Copy User.config
+  copy:
+    src: ../../../dockers/prometheus-stack-j2/user.config
+    dest: /opt/prometheus/user.config
+
+- name: Set Right Ownership
+  file:
+    path: /opt/prometheus/
+    state: directory
+    recurse: yes
+    mode: 0755
+    owner: centos
+    group: centos
+
+- name: Run Prometheus docker compose
+  shell: docker-compose up --build -d --force-recreate
+  args:
+    chdir: /opt/prometheus
+  register: command_result
+  failed_when: "'failed to build' in command_result.stderr"

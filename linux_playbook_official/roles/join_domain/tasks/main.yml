@@ -1,0 +1,32 @@
+---
+# file: roles/join_domain/tasks/main.yml
+
+- include: sles.yml
+  when: ansible_distribution == "SLES" and ansible_distribution_major_version == "12"
+
+  #- include: sles11.yml
+  #when: ansible_distribution == "SLES" and ansible_distribution_major_version == "11"
+
+- include: rhel.yml
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+- include: allow.yml
+
+- name: CVE-1999-0519 restrict Samba guest account and anonymous login
+  ini_file: 
+    dest: /etc/samba/smb.conf
+    section: global
+    option: "{{'\t'}}restrict anonymous"
+    value: 2
+    backup: yes
+
+- name: CVE-1999-0562 disable netbios and avoid NetBIOS session
+  ini_file:
+    dest: /etc/samba/smb.conf
+    section: global
+    option: "{{'\t'}}disable netbios"
+    value: yes
+    backup: yes
+
+- name: Start winbind service
+  service: name=winbind enabled=yes state=restarted

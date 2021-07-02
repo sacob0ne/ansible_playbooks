@@ -1,0 +1,25 @@
+---
+# file: roles/join_domain/tasks/rhel.yml
+
+- name: Uninstall samba-common
+  package: name=samba-common state=absent
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' ) and
+        ansible_distribution_major_version == "5"
+
+- name: Install prerequisite join
+  package: name=samba3x-winbind state=present
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' ) and
+        ansible_distribution_major_version == "5"
+
+- name: Install prerequisite join
+  package: name="{{ item }}" state=present
+  with_items:
+    - samba-winbind
+    - krb5-workstation
+    - samba-winbind-krb5-locator
+  when: ( ansible_distribution == 'RedHat' or ansible_distribution == 'CentOS' ) and
+        ( ansible_distribution_major_version == "6" or ansible_distribution_major_version == "7" )
+
+- name: join to domain
+  command: authconfig --update --kickstart --enablewinbind --enablewinbindauth --smbsecurity=ads --smbworkgroup=SAIPEMNET --smbrealm=saipemnet.saipem.intranet --smbservers=sasv01q7.saipemnet.saipem.intranet --winbindjoin=saxab0ne%<PASSWORD> --winbindtemplatehomedir=/home/SAIPEMNET/%U --winbindtemplateshell=/bin/bash --enablelocauthorize --enablemkhomedir
+#  command: authconfig --update --kickstart --enablewinbind --enablewinbindauth --smbsecurity=ads --smbworkgroup=SAIPEMNET --smbrealm=saipemnet.saipem.intranet --smbservers=sasv01q7.saipemnet.saipem.intranet --winbindjoin=saxt0781%<PASSWORD> --winbindtemplatehomedir=/home/SAIPEMNET/%U --winbindtemplateshell=/bin/bash --enablelocauthorize --enablemkhomedir

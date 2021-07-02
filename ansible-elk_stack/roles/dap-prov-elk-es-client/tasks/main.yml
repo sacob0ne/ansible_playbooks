@@ -1,0 +1,167 @@
+---
+- name: Copy Elasticsearch Dockerfile, docker-compose and all config files
+  synchronize: 
+    src: ../../../dockers/elk-stack/elasticsearch/
+    dest: /opt/es-client/
+    use_ssh_args: yes
+
+- name: Add custom Docker repository to Dockerfile (if present)
+  command: bash -c "sed -i 's|^FROM |FROM {{ custom_registry }}|' /opt/es-client/Dockerfile"
+  ignore_errors: yes
+
+- file:
+    path: /opt/elasticsearch/data 
+    owner: centos
+    group: centos
+    state: directory
+
+- file:
+    path: /var/log/elasticsearch 
+    owner: centos
+    group: centos
+    state: directory
+
+- file:
+    path: /opt/es-kibana/haproxy
+    owner: centos
+    group: centos
+    state: directory
+    
+- name: Configure role in docker-compose
+  replace:
+    path: /opt/es-client/docker-compose.yml
+    regexp: 'es-role-name'
+    replace: 'es-client'
+    backup: no
+  when: standalone | default("false") | match("false")
+
+- name: Configure role in docker-compose
+  replace:
+    dest: /opt/es-client/docker-compose.yml
+    regexp: 'es-role-name'
+    replace: 'es-standalone'
+    backup: no
+  when: standalone | default("false") | match("true")
+
+- name: Configure client-only settings for ES
+  replace:
+    path: /opt/es-client/config/elasticsearch.yml
+    regexp: '##client-only##'
+    replace: ''
+    backup: no
+
+- name: Single master if standalone
+  replace:
+    path: /opt/es-client/config/elasticsearch.yml
+    regexp: '^\s*discovery.zen.ping.unicast.hosts.*$'
+    replace: 'discovery.zen.ping.unicast.hosts: ["${ELASTIC_NODE_MASTER1_HOSTNAME}"]'
+    backup: no
+  when: standalone | default("false") | match("true")
+
+- name: Single master if standalone
+  replace:
+    path: /opt/es-client/config/elasticsearch.yml
+    regexp: '^\s*discovery.zen.minimum_master_nodes.*$'
+    replace: 'discovery.zen.minimum_master_nodes: 1'
+    backup: no
+  when: standalone | default("false") | match("true")
+
+- name: Copy Elasticsearch Client Environment file
+  when: standalone | default("false") | match("false")
+  template: src=es-client.jinja2 dest=/opt/es-client/es-client.env
+
+- name: Copy Elasticsearch Client Environment file
+  when: standalone | default("false") | match("true")
+  template: src=es-standalone.jinja2 dest=/opt/es-client/es-standalone.env
+
+- name: Run Elasticsearch Client docker compose
+  shell: docker-compose up --build -d
+  args:
+    chdir: /opt/es-client
+  register: command_result
+  failed_when: "'failed to build' in command_result.stderr or 'is invalid because' in command_result.stderr"
+
+#- name: Copy Head Dockerfile, docker-compose and all config files
+#  synchronize: 
+#    src: ../../../dockers/elk-stack/head/
+#    dest: /opt/es-head/
+#    use_ssh_args: yes
+#
+#- name: Run Head docker compose
+#  shell: docker-compose up --build -d
+#  args:
+#    chdir: /opt/es-head
+#  register: command_result
+#  failed_when: "'failed to build' in command_result.stderr"
+
+- name: Stop Head docker (deprecated) if existing
+  shell: docker-compose down
+  args:
+    chdir: /opt/es-head
+  ignore_errors: yes
+
+- name: Remove Head docker (deprecated) if existing
+  shell: docker rm -f es-head
+  ignore_errors: yes
+
+- name: Copy Cerebro Dockerfile and docker-compose
+  synchronize: 
+    src: ../../../dockers/elk-stack/cerebro/
+    dest: /opt/es-cerebro/
+    use_ssh_args: yes
+
+- name: Run Cerebro docker compose
+  shell: docker-compose up --build -d
+  args:
+    chdir: /opt/es-cerebro
+  register: command_result
+  failed_when: "'failed to build' in command_result.stderr or 'is invalid because' in command_result.stderr"
+
+- name: Copy Kibana Dockerfile, docker-compose and all config files
+  synchronize: 
+    src: ../../../dockers/elk-stack/kibana/
+    dest: /opt/es-kibana/
+    use_ssh_args: yes
+
+- name: Copy Elasticsearch Environment file
+  template: src=kibana.jinja2 dest=/opt/es-kibana/config/kibana.yml
+
+- name: Copy HAProxy Config file
+  template: src=haproxy.jinja2 dest=/opt/es-kibana/haproxy/haproxy.cfg
+
+- name: Copy Kibana docker-compose file
+  template: src=kibana-docker-compose.jinja2 dest=/opt/es-kibana/docker-compose.yml
+
+- name: Run Kibana docker compose
+  shell: docker-compose up --build -d
+  args:
+    chdir: /opt/es-kibana
+  register: command_result
+  failed_when: "'failed to build' in command_result.stderr or 'is invalid because' in command_result.stderr"
+
+#####LOAD ALL TEMPLATES 
+- pause:
+    seconds: 20
+
+- replace:
+    path: /opt/es-client/es_templates/del.sh
+    regexp: '10.170.14.123'
+    replace: "{{ groups['es-client'][0] }}"
+    backup: no
+
+- replace:
+    path: /opt/es-client/es_templates/put.sh
+    regexp: '10.170.14.123'
+    replace: "{{ groups['es-client'][0] }}"
+    backup: no
+
+
+- name: Delete existing templates
+  shell: /opt/es-client/es_templates/del.sh
+  args:
+    chdir: /opt/es-client/es_templates
+
+- name: Load all templates
+  shell: /opt/es-client/es_templates/put.sh
+  args:
+    chdir: /opt/es-client/es_templates

@@ -1,0 +1,10 @@
+---
+# file: infra.yml
+
+- hosts: all
+
+  roles:
+    - python
+    - active-directory
+    - join-domain
+    - common

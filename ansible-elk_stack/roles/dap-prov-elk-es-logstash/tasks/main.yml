@@ -1,0 +1,45 @@
+---
+- name: Delete all old files to a fresh new deployment
+  shell: rm -rf /opt/es-logstash/conf.d/* /opt/es-logstash/conf.d.j2/*
+
+- name: Copy Logstash Dockerfile, docker-compose and all config files
+  synchronize: 
+    src: ../../../dockers/elk-stack/logstash/
+    dest: /opt/es-logstash/
+    use_ssh_args: yes
+
+- name: Copy Logstash's configuration files in jinja format
+  template: src={{ item }} dest=/opt/es-logstash/conf.d/{{ item | basename | regex_replace('\.jinja2','') }}
+  with_fileglob:
+    - ../../../dockers/elk-stack/logstash/conf.d.j2/*.jinja2
+
+- name: Add custom Docker repository to Dockerfile (if present)
+  command: bash -c "sed -i 's|^FROM |FROM {{ custom_registry }}|' /opt/es-logstash/Dockerfile"
+  ignore_errors: yes
+
+- name: Get DNS1 from host machine
+  command: bash -c "cat /etc/resolv.conf | sed -n '2p' | cut -d' ' -f2"
+  register: host_dns1
+
+- name: Get DNS2 from host machine
+  command: bash -c "cat /etc/resolv.conf | sed -n '3p' | cut -d' ' -f2"
+  register: host_dns2
+
+- name: Copy docker-compose file for logstash
+  template: src=docker-compose-logstash.jinja2 dest=/opt/es-logstash/docker-compose.yml
+
+- name: Copy Logstash startup.options
+  template: src=startup.options.jinja2 dest=/opt/es-logstash/config/startup.options
+
+- name: Copy Logstash jvm.options
+  template: src=jvm.options.jinja2 dest=/opt/es-logstash/config/jvm.options
+
+- name: Delete old images
+  shell: docker image prune -f
+
+- name: Run Logstash docker compose
+  shell: docker-compose up --build -d
+  args:
+    chdir: /opt/es-logstash
+  register: command_result
+  failed_when: "'failed to build' in command_result.stderr or 'is invalid because' in command_result.stderr"

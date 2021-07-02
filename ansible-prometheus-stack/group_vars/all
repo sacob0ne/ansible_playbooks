@@ -1,0 +1,7 @@
+---
+#variables
+
+prometheus_version: 2.6.1
+promtool_version: 2.5.0
+alertmanager_version: 0.15.3
+grafana_version: 5.4.2

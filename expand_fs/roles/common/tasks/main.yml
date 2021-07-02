@@ -1,0 +1,156 @@
+---
+# file: roles/common/tasks/main.yml
+- name: Rescan disks
+  shell: echo "- - -" > /sys/class/scsi_host/host0/scan; echo "- - -" > /sys/class/scsi_host/host1/scan; echo "- - -" > /sys/class/scsi_host/host2/scan
+
+#- include_vars: vars.yml
+
+- name: Format disk
+  shell: echo -e "\nn\np\n1\n\n\nt\n8e\nw" | fdisk "{{ disk_1 }}"
+  when: disk_1 is defined
+#  when: (sdb_exist.stat.exists == False)
+
+- name: Format disk
+  shell: echo -e "\nn\np\n1\n\n\nt\n8e\nw" | fdisk "{{ disk_2 }}"
+  when: disk_2 is defined
+#  when: (sdb_exist.stat.exists == False)
+
+#- name: Check if pv /dev/sdb1 is already present
+#  stat: path="{{ pv_sdb1 }}"
+#  register: sdb1_exist
+
+#- name: Check if /dev/sdc1 is already present
+#  stat: path="{{ pv_sdc1 }}"
+#  register: sdc1_exist
+
+- name: find lvm
+  raw: "find /dev/VG* -name *test*"
+  register: test2
+
+- name: Create physical volume
+  command: pvcreate "{{ disk_1 }}1"
+
+- name: Extend volume group
+  command: vgextend {{ test2.stdout }} "{{ disk_1 }}1"
+  when: disk_1 is defined
+
+- name: Create volume group
+  lvg:
+    vg: VG01
+    pvs: "{{ disk_1 }}1"
+    state: present
+  when: disk_1 is defined and vg00_exist.stat.exists == True
+
+- name: Create volume group
+  lvg:
+    vg: VG01
+    pvs: "{{ disk_2 }}1"
+    state: present
+  when: disk_2 is defined
+#  when: (sdb1_exist.stat.exists == False)
+
+#- name: Check if pv /dev/sdb1 is already present
+#  stat: path="{{ pv_sdb1 }}"
+#  register: sdb1_exist
+
+#- name: Check if /dev/sdc1 is already present
+#  stat: path="{{ pv_sdc1 }}"
+#  register: sdc1_exist
+
+#- name: Create physical volume
+#  raw: pvcreate /dev/sdc1
+#  when: (sdc1_exist.stat.exists == False)
+#  ignore_errors: True
+
+#- name: Create volume group
+#  lvg:
+#    vg: VG00
+#    pvs: /dev/sdc1
+#  when: (sdb1_exist.stat.exists == True and sdc1_exist.stat.exists == True)
+ 
+- name: Create logical volume
+  lvol:
+    vg: VG00
+    lv: "{{ lvm }}"
+#    lv: oradata
+    size: 100%FREE
+    state: present
+    shrink: no
+  when: disk_1 is defined and vg00_exist.stat.exists == False
+#  when: disk_1 is defined
+
+- name: Create logical volume
+  lvol:
+    vg: VG01
+    lv: "{{ lvm }}"
+#    lv: oradata
+    size: 100%FREE
+    state: present
+    shrink: no
+  when: disk_1 is defined and vg00_exist.stat.exists == True
+#  when: disk_1 is defined
+
+- name: Create logical volume
+  lvol:
+    vg: VG01
+    lv: "{{ lvm }}"
+#    lv: oradata
+    size: 100%FREE
+    state: present
+    shrink: no
+  when: disk_2 is defined
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+#    dev: /dev/VG00/oradata
+    dev: /dev/VG00/{{ lvm }}
+  when: disk_1 is defined and vg00_exist.stat.exists == False
+#  when: disk_1 is defined
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+#    dev: /dev/VG00/oradata
+    dev: /dev/VG01/{{ lvm }}
+  when: disk_1 is defined and vg00_exist.stat.exists == True
+#  when: disk_1 is defined
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+#    dev: /dev/VG00/oradata
+    dev: /dev/VG00/{{ lvm }}
+  when: disk_2 is defined
+    
+- name: Mount logical volume
+  mount:
+    name: "/{{ mount }}"
+#    name: /oradata
+    src: /dev/VG00/{{ lvm }}
+#    src: /dev/VG00/oradata
+    fstype: ext4
+    state: mounted
+  when: disk_1 is defined and vg00_exist.stat.exists == False
+#  when: disk_1 is defined
+
+- name: Mount logical volume
+  mount:
+    name: "/{{ mount }}"
+#    name: /oradata
+    src: /dev/VG01/{{ lvm }}
+#    src: /dev/VG00/oradata
+    fstype: ext4
+    state: mounted
+  when: disk_1 is defined and vg00_exist.stat.exists == True
+#  when: disk_1 is defined
+
+- name: Mount logical volume
+  mount:
+    name: "{{ mount }}"
+#    name: /oradata
+    src: /dev/VG00/{{ lvm }}
+#    src: /dev/VG00/oradata
+    fstype: ext4
+    state: mounted
+  when: disk_2 is defined

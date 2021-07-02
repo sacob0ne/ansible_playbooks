@@ -1,0 +1,10 @@
+---
+spacewalk_service_name: rhnsd
+spacewalk_packages:
+  - rhn-client-tools 
+  - rhn-check 
+  - rhn-setup 
+  - rhnsd 
+  - yum-rhn-plugin
+  - m2crypto
+package_missing: false

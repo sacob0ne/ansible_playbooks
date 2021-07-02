@@ -1,0 +1,4 @@
+---
+# file: roles/common/tasks/main.yml
+- name: Add domain's groups as local Administrators
+  raw: ([adsi]"WinNT://./Administrators,group").Add("WinNT://SAIPEMNET/{{ group }},group")

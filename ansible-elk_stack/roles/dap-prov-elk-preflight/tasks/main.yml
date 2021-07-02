@@ -1,0 +1,69 @@
+---
+- name: Get all mountable drives 
+  command: bash -c "tempfile=$(mktemp) && lsblk -nr >> $tempfile && tac $tempfile | sed '/boot/d' | sed '/part/I, +1 d' | sed '/loop/d' | sed '/docker/d' | sed '#/#d'  | sed '/fd0/d' | sed '/sr0/d' | sed '/lvm/I, +1 d' | sed 's#^#/dev/#' | tac | awk '{print $1}' | sed ':a;N;$!ba;s/\n/ /g'"
+  register: drives_list
+
+- block:
+  - name: Create Physical Volumes 
+    command: bash -c "pvcreate {{ drives_list.stdout }}"
+
+  - name: Extend group 
+    command: bash -c "vgextend VolGroup00 {{ drives_list.stdout }}"
+
+  - name: Extend LV 
+    command: bash -c "lvresize -l +100%FREE /dev/VolGroup00/rootLV"
+
+  - name: Extend FS 
+    command: bash -c "resize2fs /dev/VolGroup00/rootLV"
+
+  - name: Create Elasticsearch data directory
+    file:
+      path: "/opt/elasticsearch/data"
+      recurse: yes
+      state: directory
+
+  when: 
+   - drives_list.stdout != ""
+   - "extendlvprivate | default('false') | match('true')"
+
+
+- block:
+  - name: Create Physical Volumes
+    command: bash -c "pvcreate {{ drives_list.stdout }}"
+
+  - name: Create Volume Group
+    command: bash -c "vgcreate vg0 {{ drives_list.stdout }}"
+
+  - name: Create Logical Volume
+    command: bash -c "lvcreate -l 100%FREE -n lv0 vg0 && mkfs.xfs -i maxpct=25 -f /dev/vg0/lv0"
+
+  - name: Mount up device by label
+    mount:
+      path: /opt/elasticsearch/data
+      src: /dev/vg0/lv0
+      fstype: xfs
+      state: mounted
+
+  when: 
+   - drives_list.stdout != ""
+   - "extendlvprivate | default('false') | match('false')"
+
+
+- name: Increase VM MAX settings
+  lineinfile:
+    dest=/etc/sysctl.conf
+    line="vm.max_map_count = 1048575"
+    insertafter=EOF
+
+- name: Apply VM MAX settings
+  shell: sysctl -p
+
+- name: Copy Node Exporter CRON
+  copy:
+     src: directory_size-elk
+     dest: /etc/cron.d/directory_size
+     force: yes
+
+- name: Including Preflight
+  include_role:
+    name: ../../ansible-dap-preflight/roles/dap-prov-docker-preflight

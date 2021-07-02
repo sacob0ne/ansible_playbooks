@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  kibana:
+    build: .
+    container_name: es-kibana
+    image: kibana
+    restart: unless-stopped
+    network_mode: host
+    expose:
+      - 5601
+    ports:
+      - 5601:5601
+
+  haproxy:
+    image: {{ custom_registry }}haproxy:1.7
+    container_name: haproxy
+    volumes:
+      - ./haproxy/:/usr/local/etc/haproxy/
+    restart: unless-stopped
+    network_mode: host
+    ports:
+      - 80:80

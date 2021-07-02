@@ -1,0 +1,6 @@
+---
+- name: Login to DC/OS with dap
+  command: dap login dev.uk
+    
+- name: Login to DC/OS
+  command: dcos auth login --username=superuser --password="{{ dapuk_passwd }}"

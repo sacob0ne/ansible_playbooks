@@ -1,0 +1,6 @@
+[spacewalk-client]
+name=Spacewalk Client Tools
+#baseurl=http://sasv02fj.saipemnet.saipem.intranet/pub/rhel/yum.spacewalkproject.org/2.4-client/RHEL/7/$basearch/
+baseurl=http://sasv02fj.saipemnet.saipem.intranet/pub/rhel/rhel7/$basearch/
+enabled=1
+gpgcheck=0

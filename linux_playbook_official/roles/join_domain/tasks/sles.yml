@@ -1,0 +1,57 @@
+---
+# file: roles/join_domain/tasks/sles.yml
+
+- name: Install samba-winbind
+  package: name=samba-winbind state=present
+
+- name: Install krb5-client
+  package: name=krb5-client state=present
+  
+- name: Join to saipemnet domain
+  command: yast2 samba-server configure workgroup=SAIPEMNET.SAIPEM.INTRANET
+- command: yast2 samba-client winbind enable
+- command: pam-config --add --winbind
+- command: pam-config -a --mkhomedir
+
+- name: Type SAIPEMNET as workgroup
+  replace:
+    dest: /etc/samba/smb.conf
+    regexp: '^(.*)workgroup = SAIPEMNET.SAIPEM.INTRANET(.*)$'
+    replace: '\1workgroup = SAIPEMNET\2'
+
+- name: Enabling trusted domain group
+  ini_file:
+    dest: /etc/samba/smb.conf
+    section: global
+    option: "{{'\t'}}winbind offline logon"
+    value: "yes"
+    backup: yes
+
+- command: yast2 samba-client isdomainmember domain=SAIPEMNET.SAIPEM.INTRANET
+- raw: yast2 samba-client joindomain domain=SAIPEMNET.SAIPEM.INTRANET user=saipemnet\\saxt0781 password=<PASSWORD>
+  args:
+    creates: /var/lib/samba/smb_krb5/krb5.conf.SAIPEMNET
+
+- name: Enable winbind
+  service:
+    name: winbind
+    enabled: yes
+    state: started
+
+- name: Enable GSSAPIAuthentication
+  replace:
+    dest: /etc/ssh/ssh_config
+    regexp: '^(.*)GSSAPIAuthentication no(.*)$'
+    replace: '\1GSSAPIAuthentication yes\2'
+
+- name: Enable GSSAPIDelegateCredentials
+  replace:
+    dest: /etc/ssh/ssh_config
+    regexp: '^(.*)GSSAPIDelegateCredentials no(.*)$'
+    replace: '\1GSSAPIDelegateCredentials yes\2'
+
+- name: Stop and disable nscd
+  service:
+    name: nscd
+    enabled: no
+    state: stopped

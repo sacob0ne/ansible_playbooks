@@ -1,0 +1,3 @@
+sftp_user: skysftp
+sftp_group: sftpgroup
+sync_root_dir: /mnt/sync/folders/

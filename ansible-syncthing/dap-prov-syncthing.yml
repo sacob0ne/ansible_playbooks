@@ -1,0 +1,15 @@
+---
+# file: infra.yml
+
+- hosts: private-agents
+  user: root
+  roles:
+    - dap-prov-syncthing
+
+
+# Run on a SINGLE node
+- name: Change ownership and permissions for all folders and files regarding SFTP service. SyncThing will synchronize among the other private agents
+  hosts: private-agents[0]
+  user: root
+  roles:
+  - { role: dap-sftp-bskyb-folders, tags: 'config-syncthing-folders' }

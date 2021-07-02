@@ -1,0 +1,237 @@
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' "check_disk.wsf"
+' Original from
+' nagios@samurai.inka.de
+'
+' 03.06.2003 ver 1.13
+' Type converting problems fixed
+' New return string format
+' Minor bugs in the help
+' Auto MB or GB detect
+' 13.06.2003 ver 1.13b (miwi)
+'added support for Percentage in /w and /c
+' 
+' 02.02.2011 ver 1.51 (fabio.frioni@gmail.com)
+'added support for method (free space|used space), default used space
+'Percentage in decimals for data and /w and /c
+'added performances
+'
+' 01.06.2012 ver 1.52 (fabio.frioni@gmail.com)
+'Fixed a bug on return code when multi drive 
+' --------------------------------------------------------------
+' This plugin returns the Total, Free And Used space In MB And % of a given drive
+'
+
+<job>
+<runtime>
+  <description>
+check_disk (nrpe_nt-plugin) 1.52
+The nagios plugins come with ABSOLUTELY NO WARRANTY. You may redistribute
+copies of the plugins under the terms of the GNU General Public License.
+For more information about these matters, see the file named COPYING.
+Copyright (c) 1999-2001 Ethan Galstad/Hagen Deike (nagios@samurai.inka.de)
+
+ 02.02.2011 ver 1.51 Fabio Frioni - Intesi Group SPA (ffrioni@intesigroup.com) (fabio.frioni@gmail.com)
+added support for method (free space|used space), default used space
+Percentage in decimals for data and /w and /c
+added performances
+
+This plugin returns the Total, Free And Used space In MB And % of a given drive.
+
+Added features by Fabio Frioni (fabio.frioni@gmail.com)
+-) Percentage with decimals (for instance 98,35%)
+-) Dependencies with operating system and language, so you have to use comma (,) or dot "."
+   as decimal separator
+-) Performance data are now available by default
+
+  </description>
+  <named
+    name="h"
+    helpstring="Help"
+    type="simple"
+    required="false" 
+  />
+  <named
+    name="drive"
+    helpstring="The drive letter to check. See the example."
+    type="string"
+    required="true" 
+  />
+  <named
+    name="w"
+    helpstring="Warning watermark. Defined in MB (/w:100) or % (/w:80%)"
+    type="string"
+    required="true"
+  />
+  <named
+    name="c"
+    helpstring="Critical watermark. Defined in MB (/c:100) or % (/c:90%)"
+    type="string"
+    required="true"
+  />
+  <named
+    name="method"
+    helpstring="Method to use. FS for free space; US for used space (default)"
+    type="string"
+    required="false" 
+  />
+  <named
+    name="perf"
+    helpstring="Takes the performance data"
+    type="simple"
+    required="false" 
+  />
+  <example>
+Example: check_disk.wsf /drive:"c:\" /w:80.34 /c:98.15 /method:fs|us [/perf]
+  </example>
+</runtime>
+<script language="VBScript">
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Const's and Var's
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Cons for return val's
+Const intOK = 0
+Const intWarning = 1
+Const intCritical = 2
+Const intUnknown = 3
+
+' Cons for FSO
+Const ForReading = 1
+Const ForWriting = 2
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Help
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  If Wscript.Arguments.Named.Exists("method") Or Wscript.Arguments.Named.Exists("h") Or Not Wscript.Arguments.Named.Exists("drive") Or Not Wscript.Arguments.Named.Exists("w") Or Not Wscript.Arguments.Named.Exists("c") Then
+	Wscript.Echo "Plugin help screen:"
+      Wscript.Arguments.ShowUsage()
+      Wscript.Quit(intUnknown)
+  End If
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Main
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Dim objFSO, objDrive, intFree, intTotal, intUsed, intFreePro, intUsedPro, strDriveName, strFreeType, strTotalType, strUsedType
+Dim StrOutput, ReturnCode, ReturnCodeH, DblWarning, DblCritical, StrPerfData, StrALERT(4),nDrives,aStrDriveName(), IDX
+
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+
+'On Error Resume Next
+
+StrALERT(0) = "OK"
+StrALERT(1) = "WARNING"
+StrALERT(2) = "CRITICAL"
+StrALERT(3) = "UNKNOWN"
+
+
+strDriveName = Wscript.Arguments.Named("drive")
+strFreeType = "MB"
+strTotalType = "MB"
+strUsedType = "MB"
+ReturnCode = intUnknown
+nDrives = 0
+StrOutput = ""
+StrPerfData = ""
+
+If LCase(strDriveName) = "all" Then
+    Set colDrives = objFSO.Drives
+
+    For Each objDrive in colDrives
+        If objDrive.DriveType = 2 Then
+            nDrives = nDrives + 1
+            ReDim Preserve aStrDriveName(nDrives)
+            aStrDriveName(nDrives-1) = objDrive.DriveLetter & ":"
+        End If
+    Next
+    Set colDrives = nothing
+    Set objDrive = nothing
+Else
+    nDrives = 1
+    ReDim Preserve aStrDriveName(nDrives)
+    aStrDriveName(nDrives-1) = strDriveName
+End If
+
+ReturnCodeH = intOK
+
+For IDX=LBound(aStrDriveName) TO UBound(aStrDriveName)-1
+    Set objDrive = objFSO.GetDrive(objFSO.GetDriveName(aStrDriveName(IDX)))
+    intFree = CLng(FormatNumber(objDrive.FreeSpace/1048576, 0))
+    intTotal = CLng(FormatNumber(objDrive.TotalSize/1048576, 0))
+    intUsed = CLng(FormatNumber((objDrive.TotalSize - objDrive.FreeSpace)/1048576, 0))
+
+    intFreePro = 0.0
+    intUsedPro = 0.0
+    intFreePro = Round((intFree*100.0)/intTotal,2)
+    intUsedPro = Round((intUsed*100.0)/intTotal,2)
+
+    strFreeType = "MB"
+    strUsedType = "MB"
+    strTotalType = "MB"
+    intFreeOut = intFree
+    intUsedOut = intUsed
+    intTotalOut = intTotal
+    If intFreeOut > 1024 Then
+        intFreeOut = Round(intFreeOut/1024,2)
+        strFreeType = "GB"
+    End If
+    If intUsedOut > 1024 Then
+        intUsedOut = Round(intUsedOut/1024,2)
+        strUsedType = "GB"
+    End If
+    If intTotalOut > 1024 Then
+        intTotalOut = Round(intTotalOut/1024,2)
+        strTotalType = "GB"
+    End If
+
+    ' Cleaning up any symbols and try to understand what arguments meaning
+    SDblCritical = Trim(Replace(Wscript.Arguments.Named("c"),"%",""))
+    SDblCritical = Replace(SDblCritical,",","")
+    SDblCritical = Replace(SDblCritical,".","")
+    If Len(SDblCritical) <= 2 Then
+        DblCritical = Round(CDbl(SDblCritical),2)
+    Else
+        DblCritical = Round(CDbl(SDblCritical)/100,2)
+    End If
+
+    ' Cleaning up any symbols and try to understand what arguments meaning
+    SDblWarning = Trim(Replace(Wscript.Arguments.Named("w"),"%",""))
+    SDblWarning = Replace(SDblWarning,",","")
+    SDblWarning = Replace(SDblWarning,".","")
+    If Len(SDblWarning) <= 2 Then
+        DblWarning = Round(CDbl(SDblWarning),2)
+    Else
+        DblWarning = Round(CDbl(SDblWarning)/100,2)
+    End If
+
+    ReturnCode = intOK
+
+    If UCase(Wscript.Arguments.Named("method")) = "FS" Then
+        If intFreePro <= DblCritical Then
+            ReturnCode = intCritical
+        ElseIf intFreePro <= DblWarning Then
+            ReturnCode = intWarning
+        End if
+        StrPerfData = StrPerfData & " '" & Replace(Replace(UCase(aStrDriveName(IDX)),"\",""),"/","") & "'=" & intFreePro & "%;" & DblWarning & ";" & DblCritical
+    Else
+        If intUsedPro >= DblCritical Then
+            ReturnCode = intCritical
+        ElseIf intUsedPro >= DblWarning Then
+            ReturnCode = intWarning
+        End if
+        StrPerfData = StrPerfData & " '" & Replace(Replace(UCase(aStrDriveName(IDX)),"\",""),"/","") & "'=" & intUsedPro & "%;" & DblWarning & ";" & DblCritical
+    End If
+
+    aStrDriveName(IDX) = Trim(UCase(aStrDriveName(IDX)) &" "& StrALERT(ReturnCode))
+    StrOutput = StrOutput & aStrDriveName(IDX) & " Total:"& intTotalOut & strTotalType &"; Free:"& intFreeOut & strFreeType &" ("& Round(intFreePro,2) &"%); Used:"& intUsedOut & strUsedType &" ("& Round(intUsedPro,2) &"%) - "
+    if ReturnCodeH < ReturnCode Then
+        ReturnCodeH = ReturnCode
+    End If
+Next
+' StrOutput = UCase(strDriveName) &" "& objDrive.VolumeName &" Total: "& intTotalOut &" "& strTotalType &" - Free: "& intFreeOut &" "& strFreeType &" ("& Round(intFreePro,0) &"%) - Used: "& intUsedOut &" "& strUsedType &" ("& Round(intUsedPro,0) &"%)"
+WScript.Stdout.Write Replace(StrOutput & "|" & StrPerfData,",",".")
+Set objFSO = Nothing
+Wscript.Quit(ReturnCodeH)
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+</script>
+</job>

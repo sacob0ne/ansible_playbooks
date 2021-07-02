@@ -1,0 +1,11 @@
+---
+- name: Deploy rest-proxy
+  command: dcos package install confluent-rest-proxy --package-version={{ rest_proxy_ver }} --options "{{ item }}" --yes
+  with_items:
+    - "../../dcos/dap-uk/options\ json\ -\ install\ and\ upgrade/rest-proxy/rest-proxy.json"  
+
+- name: Check if service has been deployed correctly
+  command: bash -c "dcos marathon app list | grep "rest-proxy" | awk '{print $6}'"
+  register: testit
+  retries: 30
+  until: testit.stdout == "---"

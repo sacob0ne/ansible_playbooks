@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bootstrap>
+<InstallCommand>FrmInst.exe /Install=Agent /Silent</InstallCommand>
+<PlatformID>WXPW:5:1:2|WXPS:5:2:2|WXPHE:5:1:2|WXPE:5:1:2|WVST|WVSTS|WNT7W|WIN8W|WIN8S|WINXW|WINXS</PlatformID>
+<ProductVersion>_PRODUCT_VERSION_</ProductVersion>
+<ProductVersion>_PRODUCT_VERSION_</ProductVersion>
+<BuildNumber>_BUILDNUM_</BuildNumber>
+<configFile>FrameworkConfig.zip</configFile>
+<installFile>FrameworkInstall.zip</installFile>
+</bootstrap>
+

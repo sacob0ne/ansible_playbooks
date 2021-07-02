@@ -1,0 +1,14 @@
+- name: Create mount point
+  file: path=/mnt/Nagios_Centr1_Import state=directory
+
+- name: Mount temporary cifs share
+  raw: "mount -t cifs //sasv0158.saipemnet.saipem.intranet/Nagios_Centr1_Import$ /mnt/Nagios_Centr1_Import -o username=saxt0781,password=<ENTER_PASSWORD>"
+
+- name: Create add2centr.txt file
+  raw: hostname > /mnt/Nagios_Centr1_Import/add2centr.txt
+
+- name: Unmount temporary cifs share
+  command: umount /mnt/Nagios_Centr1_Import/
+
+- name: Remove mount point
+  file: path=/mnt/Nagios_Centr1_Import state=absent

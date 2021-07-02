@@ -1,0 +1,26 @@
+---
+# file: roles/insall_nagios/tasks/scripts.yml
+
+- name: Copy nagios script ux_singleCPUload.sh
+  copy: src=nagios/libexec/ux_singleCPUload.sh dest=/usr/local/nagios/libexec/ backup=yes owner=root group=root mode=0755
+
+- name: Copy nagios script check_cpu.py
+  copy: src=nagios/libexec/check_cpu.py dest=/usr/local/nagios/libexec/ backup=yes owner=root group=root mode=0755
+
+- name: Copy nagios script check_free.sh 
+  copy: src=nagios/libexec/check_free.sh dest=/usr/local/nagios/libexec/ backup=yes owner=root group=root mode=0755
+
+- name: Copy nagios script check_uptime3
+  copy: src=nagios/libexec/check_uptime3 dest=/usr/local/nagios/libexec/ backup=yes owner=root group=root mode=0755
+
+- name: Copy nagios script check_volumes
+  copy: src=nagios/libexec/check_volumes dest=/usr/local/nagios/libexec/ backup=yes owner=root group=root mode=0755
+
+- name: Copy nagios script check_swap
+  copy: src=nagios/libexec/check_swap dest=/usr/local/nagios/libexec/ backup=yes owner=root group=root mode=0755
+
+- name: Copy nagios script check_load
+  copy: src=nagios/libexec/check_load dest=/usr/local/nagios/libexec/ backup=yes owner=root group=root mode=0755
+
+- name: Copy nagios script check_traffic
+  copy: src=nagios/libexec/check_traffic.sh dest=/usr/local/nagios/libexec/ backup=yes owner=root group=root mode=0755

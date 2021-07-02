@@ -1,0 +1,64 @@
+---
+- name: Change permissions and ownership of sftp user home folder
+  file:
+    path: "{{ sync_root_dir }}/{{ sftp_user }}"
+    state: directory
+    owner: root
+    group: "{{ sftp_group }}"
+    mode: 0750
+
+- name: Change permissions and ownership of ottcom folder
+  file: 
+    path: "{{ sync_root_dir }}/{{ sftp_user }}/ottcom"
+    state: directory
+    owner: "{{ sftp_user }}"
+    group: "{{ sftp_group }}"
+    mode: 0750
+
+- name: Change permissions and ownership of barclaycard subfolder
+  file: 
+    path: "{{ sync_root_dir }}/{{ sftp_user }}/ottcom/barclaycard"
+    state: directory
+    owner: "{{ sftp_user }}"
+    group: "{{ sftp_group }}"
+    mode: 0750
+
+- name: Change permissions and ownership of catalogue subfolder
+  file: 
+    path: "{{ sync_root_dir }}/{{ sftp_user }}/ottcom/catalogue"
+    state: directory
+    owner: "{{ sftp_user }}"
+    group: "{{ sftp_group }}"
+    mode: 0750
+
+- name: Change permissions and ownership of voucher subfolder
+  file: 
+    path: "{{ sync_root_dir }}/{{ sftp_user }}/ottcom/voucher"
+    state: directory
+    owner: "{{ sftp_user }}"
+    group: "{{ sftp_group }}"
+    mode: 0750
+
+- name: Change permissions and ownership of campaign subfolder
+  file: 
+    path: "{{ sync_root_dir }}/{{ sftp_user }}/ottcom/campaign"
+    state: directory
+    owner: "{{ sftp_user }}"
+    group: "{{ sftp_group }}"
+    mode: 0750
+
+- name: Change permissions and ownerships of .ssh directory for sftp user
+  file: 
+    path: "{{ sync_root_dir }}/{{ sftp_user }}/.ssh"
+    state: directory
+    owner: "{{ sftp_user }}"
+    group: "{{ sftp_group }}"
+    mode: 0700
+
+- name: Change permissions and ownerships of authorized_keys file for sftp user
+  file: 
+    path: "{{ sync_root_dir }}/{{ sftp_user }}/.ssh/authorized_keys"
+    state: file
+    owner: "{{ sftp_user }}"
+    group: "{{ sftp_group }}"
+    mode: 0600

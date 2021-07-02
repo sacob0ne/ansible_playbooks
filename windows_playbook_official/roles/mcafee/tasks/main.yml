@@ -1,0 +1,29 @@
+- name: Copy ePo5.3.exe 
+  win_copy: src=ePo5.3 dest=C:\\ state=present
+
+#- name: Copy VSE88P7.exe
+#  win_copy: src=VSE880P7 dest=C:\\ state=present
+
+- name: Install MCafee Agent for Windows 2008 R2
+#  raw: cd C:\\ePo5.3\ ; .\MFEAgent.msi
+#  win_msi: path=C:\\ePo5.3\MFEagent.msi wait=true #state=present
+  win_msi:
+    path: 'C:\ePo5.3\MFEagent.msi'
+    state: present
+    extra_args: "/quiet"
+    wait: true
+  when: (ansible_distribution == 'Microsoft Windows Server 2008 R2 Standard ' and ansible_distribution_version == '6.1.7601.65536')
+
+- name: Install MCafee Agent for Windows 2012 R2
+#  raw: cd C:\FramePkg\ ; .\FramePkg.exe
+  win_msi: path=C:\\ePo5.3\MFEagent.msi wait=true
+  when: (ansible_distribution == 'Microsoft Windows Server 2012 R2 Standard' and ansible_distribution_version == '6.3.9600.0')
+
+#- name: Install VirusScan Console
+#  raw: cd C:\VSE880P7\ ; .\SetupVSE.Exe
+
+- name: Delete McAfee Agent's directory
+  raw: Remove-Item -Recurse C:\ePo5.3
+
+#- name: Delete VirusScan Console's directory
+#  raw: Remove-Item -Recurse C:\VSE880P7

@@ -1,0 +1,64 @@
+---
+- name: Insert .sh script
+  template:
+    src: templates/exporttables.sh.j2
+    dest: /opt/exporttables.sh
+
+- name: List all keyspaces
+  command: bash -c "docker run --rm --net=host -i {{ cassandra_docker }} nodetool cfstats| grep Keyspace | sed /system/d | sed 's/Keyspace\:[[:space:]]//g'"
+  register: keyspaces_list 
+
+- name: List all tables of previous keyspaces
+  command: bash -c "docker run --rm --net=host -i {{ cassandra_docker }} nodetool cfstats {{item}} | grep "Table:" | sed /system/d | sed 's/Table\:[[:space:]]//g' | sed $'s/\\t//g' | sed -e 's/^/{{item}}./' >> /opt/tables_name.cql"
+  with_items:
+  - "{{keyspaces_list.stdout_lines}}"
+
+- name: Print table list
+  command: cat /opt/tables_name.cql
+  register: table_list
+
+- name: Create cql script
+  command: touch /opt/exporttables.cql
+
+- name: Create cql script
+  lineinfile: 
+    dest: /opt/exporttables.cql
+    regexp: "^{{ item.split()[0] }}"
+    line: "COPY {{ item }} TO '/exportcsv/{{item}}.csv' WITH HEADER = TRUE;"
+  with_items: "{{ table_list.stdout_lines | list }}"
+
+- name: Remove desired strings from .cql scripts
+  command: sed -i '/{{item}}/d' /opt/exporttables.cql
+  with_items:
+  - "{{ ignored_tables }}"
+
+- name: Print cql script
+  command: cat /opt/exporttables.cql
+
+- name: Launch scripts
+  command: bash -x /opt/exporttables.sh
+
+- name: Copy template
+  vars:
+    - env: <env_name>
+  template: 
+    src: upload.j2 
+    dest: /{{ folder }}/upload.sh
+    mode: 0777
+
+- name: Execute upload
+  command: bash -c "cd /{{ folder }} && ./upload.sh"
+
+- name: Remove temporary folder
+  file:
+    path: /{{ folder }}
+    state: absent
+
+- name: Remove scripts
+  file:
+    path: /opt/{{item}}
+    state: absent
+  with_items:
+  - exporttables.cql
+  - exporttables.sh
+  - tables_name.cql

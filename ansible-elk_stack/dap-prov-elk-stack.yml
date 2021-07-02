@@ -1,0 +1,41 @@
+---
+-   name: Install Docker and docker-compose on all machines
+    hosts: es-masters:es-data:es-client:es-logstash
+    user: root
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    roles:
+    - { role: dap-prov-elk-preflight, when: update | default("false") | match("false") }
+    
+-   name: Start Elasticsearch Master Nodes
+    hosts: es-masters
+    user: root
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    roles:
+    - { role: dap-prov-elk-es-masters, when: standalone | default("false") | match("false") }
+
+-   name: Start Elasticsearch Data Nodes
+    hosts: es-data
+    user: root
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    roles:
+    - { role: dap-prov-elk-es-data, when: standalone | default("false") | match("false") }
+
+-   name: Start Elasticsearch Client, Cerebro Kibana and Index Cleaner
+    hosts: es-client
+    user: root
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    roles:
+    - dap-prov-elk-es-client
+
+-   name: Start Elasticsearch's Logstash
+    hosts: es-logstash
+    user: root
+    vars_files: 
+        - "{{ inventory_file }}-vars.yml"
+    roles:
+    - dap-prov-elk-es-logstash
+    tags: logstash

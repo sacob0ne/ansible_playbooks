@@ -1,0 +1,5 @@
+---
+# file: roles/common/tasks/deltarpm.yml
+
+- name: Install deltarpm
+  package: name=deltarpm state=present

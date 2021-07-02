@@ -1,0 +1,38 @@
+---
+# file: roles/common/tasks/securepass.yml
+
+# Install packages
+
+- name: Install SecurePass tools (SLES)
+  zypper: name="{{item}}" state=present
+  with_items:
+    - securepass-tools
+  when: ansible_distribution == "SLES"
+
+- name: Install SecurePass tools (RHEL/CentOS)
+  yum: name="{{item}}" state=present
+  with_items:
+    - securepass-tools
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat''
+
+# Copy config file
+- name: Copy SecurePass config
+  copy: src=seurepass.conf dest=/etc/securepass.conf owner=root group=root mode=0644
+
+# Enable SSH plugin
+
+- name: Enable SecurePass in SSH
+  lineinfile: 
+     dest: /etc/ssh/sshd_config 
+     state: present
+     backup: yes
+     regexp: "^AuthorizedKeysCommand" 
+     line: "AuthorizedKeysCommand /usr/bin/sp-sshkey" 
+
+- name: Enable SecurePass in SSH
+  lineinfile:
+     dest: /etc/ssh/sshd_config 
+     state: present
+     backup: yes
+     regexp:"^AuthorizedKeysCommandUser" 
+     line:"AuthorizedKeysCommandUser nobody"

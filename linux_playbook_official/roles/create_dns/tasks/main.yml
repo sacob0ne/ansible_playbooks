@@ -1,0 +1,26 @@
+- name: Create mount point
+  file: path=/mnt/add_dns state=directory
+
+- name: Mount temporary cifs share
+  raw: "mount -t cifs //sasv03t8.saipemnet.saipem.intranet/Script /mnt/add_dns -o username=saxt0781,password=<ENTER_YOUR_PASSWORD>"
+
+- name: Create Records.csv
+  command: touch /mnt/add_dns/Records.csv
+
+- name: add COMPUTER,IP
+  lineinfile: 
+    dest: /mnt/add_dns/Records.csv
+    regexp: '^'
+    line: 'COMPUTER,IP'
+    state: present
+
+- name: add COMPUTER,IP
+  lineinfile: 
+    dest: /mnt/add_dns/Records.csv
+    regexp: '^{{ ansible_hostname|upper }},{{ inventory_hostname }}'
+    insertafter: '^COMPUTER,IP'
+    line: '{{ ansible_hostname|upper }},{{ inventory_hostname }}'
+#    state: present
+
+- name: Remove mount point
+  command: umount /mnt/add_dns

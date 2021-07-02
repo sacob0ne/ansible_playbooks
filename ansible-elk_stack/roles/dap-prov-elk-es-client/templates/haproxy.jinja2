@@ -1,0 +1,25 @@
+global
+  #debug
+
+defaults
+  mode http
+  option httpclose
+  timeout connect 5000ms
+  timeout client 50000ms
+  timeout server 50000ms
+
+backend kibana
+  server kibana_server 127.0.0.1:5601
+
+backend elasticsearch
+  server elasticsearch_server {{ groups['es-client'][0] }}:9200
+
+frontend app
+
+  bind *:80
+
+  acl host_kibana hdr_beg(host) -i kibana
+  use_backend kibana if host_kibana
+
+  acl host_elasticsearch hdr_beg(host) -i elasticsearch
+  use_backend elasticsearch if host_elasticsearch

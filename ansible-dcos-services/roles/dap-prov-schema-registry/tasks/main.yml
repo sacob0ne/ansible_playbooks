@@ -1,0 +1,11 @@
+---
+- name: Deploy schema-registry
+  command: dcos package install confluent-schema-registry --package-version={{ schema_ver }} --options "{{ item }}" --yes
+  with_items:
+    - "../../dcos/dap-uk/options\ json\ -\ install\ and\ upgrade/schema-registry/schema-registry.json"  
+
+- name: Check if service has been deployed correctly
+  command: bash -c "dcos marathon app list | grep "schema-registry" | awk '{print $6}'"
+  register: testit
+  retries: 30
+  until: testit.stdout == "---"

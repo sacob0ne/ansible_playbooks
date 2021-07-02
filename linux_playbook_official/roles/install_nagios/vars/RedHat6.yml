@@ -1,0 +1,14 @@
+---
+nagios_service_name: nrpe
+nagios_config: /etc/nagios/nrpe.cfg
+nagios_packages:
+  - nrpe 
+  - nagios-common
+  - nagios-plugins-users
+  - nagios-plugins-load 
+  - nagios-plugins-swap 
+  - nagios-plugins-disk 
+  - nagios-plugins-procs 
+  - glibc.i686
+#cifs_packages:
+#  - cifs-utils

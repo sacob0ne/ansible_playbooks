@@ -1,0 +1,5 @@
+---
+# file: master.yml
+
+- include: windows.yml
+- include: linux.yml
